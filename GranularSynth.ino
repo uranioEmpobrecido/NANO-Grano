@@ -17,12 +17,14 @@ uint16_t grainAmp;
 uint8_t grainDecay;
 
 // Map Analogue channels
-#define SYNC_CONTROL         (4)
+//#define SYNC_CONTROL         (4)
 #define GRAIN_FREQ_CONTROL   (0)
 #define GRAIN_DECAY_CONTROL  (2)
 #define OCTAVE_CONTROL       (1)
 
 // Map Digital channels
+
+/*
 #define C         13
 #define Csharp    12
 #define D         11
@@ -36,6 +38,7 @@ uint8_t grainDecay;
 #define Asharp    3
 #define B         2
 #define Cupper    1
+*/
 
 // Changing these will also requires rewriting audioOn()
 
@@ -55,9 +58,11 @@ uint8_t grainDecay;
 // On the Arduino Mega
 //    Output is on pin 3
 //
-#define LED_PIN       2
-#define LED_PORT      PORTD
-#define LED_BIT       7
+//#define LED_PIN       2
+//#define LED_PORT      PORTD
+#define LED_PIN       13
+#define LED_PORT      PORTB
+//#define LED_BIT       7
 #define PWM_PIN       3
 #define PWM_VALUE     OCR3C
 #define PWM_INTERRUPT TIMER3_OVF_vect
@@ -139,6 +144,32 @@ uint16_t Octave6Table[] = {
 };
 
 
+uint16_t mapOctave() {
+
+  /*input = analogRead(SYNC_CONTROL);
+  // note = ((-0.00002*input*input)+(0.0435*input)-9.15);*/
+  if (digitalRead(8)==0){
+    selectOctave(0);
+  }
+  else if (digitalRead(9)==0){
+    selectOctave(1);
+  }
+  else if (digitalRead(10)==0){
+    selectOctave(2);
+  }
+  else if (digitalRead(11)==0){
+    selectOctave(3);
+  }
+  else if (digitalRead(12)==0){
+    selectOctave(4);
+  }
+  else if (digitalRead(13)==0){
+    selectOctave(5);
+  }
+  
+}
+
+
 uint16_t selectOctave(uint8_t note){
   
   inputOct = analogRead(OCTAVE_CONTROL);
@@ -177,53 +208,6 @@ uint16_t selectOctave(uint8_t note){
   }
 }
 
-uint16_t mapOctave() {
-
-  /*input = analogRead(SYNC_CONTROL);
-  // note = ((-0.00002*input*input)+(0.0435*input)-9.15);*/
-  if (digitalRead(8)==0){
-    selectOctave(0);
-  }
-  /*if (digitalRead(Csharp)==1){
-    selectOctave(1);
-  }*/
-  if (digitalRead(9)==0){
-    selectOctave(1);
-  }
-  if (digitalRead(10)==0){
-    selectOctave(2);
-  }
-  if (digitalRead(11)==0){
-    selectOctave(3);
-  }
-  if (digitalRead(12)==0){
-    selectOctave(4);
-  }
- /* if (digitalRead(Fsharp)==1){
-    selectOctave(6);
-  }*/
-  if (digitalRead(13)==0){
-    selectOctave(5);
-  }
-  /*if (digitalRead(Gsharp)==1){
-    selectOctave(8);
-  }
-  if (digitalRead(A)==1){
-    selectOctave(9);
-  }
-  /*if (digitalRead(Asharp)==1){
-    selectOctave(10);
-  }
-  if (digitalRead(B)==1){
-    selectOctave(11);
-  }
-  if (digitalRead(Cupper)==1){
-    selectOctave(12);
-  }*/
-}
-
-
-
 void audioOn() {
 #if defined(__AVR_ATmega8__)
   // ATmega8 has different registers
@@ -245,12 +229,12 @@ void setup() {
   
   pinMode(PWM_PIN,OUTPUT);
   
-  pinMode(13,INPUT);
-  pinMode(12,INPUT);
-  pinMode(11,INPUT);
-  pinMode(10,INPUT);
-  pinMode(9,INPUT);
-  pinMode(8,INPUT);
+  pinMode(13,INPUT_PULLUP);
+  pinMode(12,INPUT_PULLUP);
+  pinMode(11,INPUT_PULLUP);
+  pinMode(10,INPUT_PULLUP);
+  pinMode(9,INPUT_PULLUP);
+  pinMode(8,INPUT_PULLUP);
   
   
   /*
@@ -272,7 +256,9 @@ void setup() {
   DDRB = 0b00000000;    
   PORTB = 0b11111111;  
   */
+  
   audioOn();
+  
   pinMode(LED_PIN,OUTPUT);
   Serial.begin(9600);
 }
@@ -287,7 +273,7 @@ void loop() {
   //syncPhaseInc = mapPhaseInc(analogRead(SYNC_CONTROL)) / 4;
   
   // Stepped mapping to MIDI notes: C, Db, D, Eb, E, F...
-   syncPhaseInc = mapOctave();
+  syncPhaseInc = mapOctave();
   
   // Stepped pentatonic mapping: D, E, G, A, B
   // syncPhaseInc = mapPentatonic(analogRead(SYNC_CONTROL));
