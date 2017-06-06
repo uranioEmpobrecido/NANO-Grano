@@ -7,6 +7,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <math.h>
 
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
@@ -21,6 +22,20 @@ uint8_t grainDecay;
 #define GRAIN_DECAY_CONTROL  (2)
 #define OCTAVE_CONTROL       (1)
 
+// Map Digital channels
+#define C         13
+#define Csharp    12
+#define D         11
+#define Dsharp    10
+#define E         9
+#define F         8
+#define Fsharp    7
+#define G         6
+#define Gsharp    5
+#define A         4
+#define Asharp    3
+#define B         2
+#define Cupper    1
 
 // Changing these will also requires rewriting audioOn()
 
@@ -29,8 +44,8 @@ uint8_t grainDecay;
 // On old ATmega8 boards.
 //    Output is on pin 11
 //
-#define LED_PIN       13
-#define LED_PORT      PORTB
+#define LED_PIN       2
+#define LED_PORT      PORTD
 #define LED_BIT       5
 #define PWM_PIN       11
 #define PWM_VALUE     OCR2
@@ -40,8 +55,8 @@ uint8_t grainDecay;
 // On the Arduino Mega
 //    Output is on pin 3
 //
-#define LED_PIN       13
-#define LED_PORT      PORTB
+#define LED_PIN       2
+#define LED_PORT      PORTD
 #define LED_BIT       7
 #define PWM_PIN       3
 #define PWM_VALUE     OCR3C
@@ -53,13 +68,16 @@ uint8_t grainDecay;
 //
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
-#define LED_PIN       13
-#define LED_PORT      PORTB
+#define LED_PIN       2
+#define LED_PORT      PORTD
 #define LED_BIT       5
 #define PWM_INTERRUPT TIMER2_OVF_vect
 #endif
 
-uint8_t freqMap, octaveMap;
+uint16_t freqMap, octaveMap;
+
+uint16_t input, inputOct;
+uint8_t note;
 
 // Smooth logarithmic mapping
 //
@@ -121,33 +139,90 @@ uint16_t Octave6Table[] = {
 };
 
 
-uint8_t selectOctave(void){
-  int input = analogRead(OCTAVE_CONTROL);
-  octaveMap = (input*5)/1024;
-  return octaveMap;
-}
-
-uint16_t mapOctave(uint16_t input) {
-
-  freqMap = (input*12)/1024;
+uint16_t selectOctave(uint8_t note){
   
-  if (selectOctave() == 0){
-    return Octave2Table[11-freqMap];
+  inputOct = analogRead(OCTAVE_CONTROL);
+  octaveMap = (inputOct*5)/1024;
+  
+  Serial.print("  Note:");
+  Serial.print(note);
+  Serial.print("  Octave:");
+  Serial.print(octaveMap);
+  Serial.print("\n");
+  
+  if (octaveMap == 0){
+     Serial.print("Freq:");
+     Serial.print(Octave2Table[11-note]);
+    return Octave2Table[11-note];
   }
-  if (selectOctave() == 1){
-    return Octave3Table[11-freqMap];
+  if (octaveMap == 1){
+     Serial.print("Freq:");
+     Serial.print(Octave3Table[11-note]);
+    return Octave3Table[11-note];
   }
-  if (selectOctave() == 2){
-    return Octave4Table[11-freqMap];
+  if (octaveMap== 2){
+       Serial.print("Freq:");
+     Serial.print(Octave4Table[11-note]);
+    return Octave4Table[11-note];
   }
-  if (selectOctave() == 3){
-    return Octave5Table[11-freqMap];
+  if (octaveMap == 3){
+       Serial.print("Freq:");
+     Serial.print(Octave5Table[11-note]);
+    return Octave5Table[11-note];
   }
-  if (selectOctave() == 4){
-    return Octave6Table[11-freqMap];
+  if (octaveMap == 4){
+       Serial.print("Freq:");
+     Serial.print(Octave6Table[11-note]);
+    return Octave6Table[11-note];
   }
-
 }
+
+uint16_t mapOctave() {
+
+  /*input = analogRead(SYNC_CONTROL);
+  // note = ((-0.00002*input*input)+(0.0435*input)-9.15);*/
+  if (digitalRead(8)==0){
+    selectOctave(0);
+  }
+  /*if (digitalRead(Csharp)==1){
+    selectOctave(1);
+  }*/
+  if (digitalRead(9)==0){
+    selectOctave(1);
+  }
+  if (digitalRead(10)==0){
+    selectOctave(2);
+  }
+  if (digitalRead(11)==0){
+    selectOctave(3);
+  }
+  if (digitalRead(12)==0){
+    selectOctave(4);
+  }
+ /* if (digitalRead(Fsharp)==1){
+    selectOctave(6);
+  }*/
+  if (digitalRead(13)==0){
+    selectOctave(5);
+  }
+  /*if (digitalRead(Gsharp)==1){
+    selectOctave(8);
+  }
+  if (digitalRead(A)==1){
+    selectOctave(9);
+  }
+  /*if (digitalRead(Asharp)==1){
+    selectOctave(10);
+  }
+  if (digitalRead(B)==1){
+    selectOctave(11);
+  }
+  if (digitalRead(Cupper)==1){
+    selectOctave(12);
+  }*/
+}
+
+
 
 void audioOn() {
 #if defined(__AVR_ATmega8__)
@@ -166,11 +241,40 @@ void audioOn() {
 #endif
 }
 
-
 void setup() {
+  
   pinMode(PWM_PIN,OUTPUT);
+  
+  pinMode(13,INPUT);
+  pinMode(12,INPUT);
+  pinMode(11,INPUT);
+  pinMode(10,INPUT);
+  pinMode(9,INPUT);
+  pinMode(8,INPUT);
+  
+  
+  /*
+  pinMode(C,INPUT);
+  pinMode(Csharp,INPUT);
+  pinMode(D,INPUT);
+  pinMode(Dsharp,INPUT);
+  pinMode(E,INPUT);
+  pinMode(F,INPUT);
+  pinMode(Fsharp,INPUT);
+  pinMode(G,INPUT);
+  pinMode(Gsharp,INPUT);
+  pinMode(A,INPUT);
+  pinMode(Asharp,INPUT);
+  pinMode(B,INPUT);
+  pinMode(Cupper,INPUT);
+  */
+/*
+  DDRB = 0b00000000;    
+  PORTB = 0b11111111;  
+  */
   audioOn();
   pinMode(LED_PIN,OUTPUT);
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -183,7 +287,7 @@ void loop() {
   //syncPhaseInc = mapPhaseInc(analogRead(SYNC_CONTROL)) / 4;
   
   // Stepped mapping to MIDI notes: C, Db, D, Eb, E, F...
-   syncPhaseInc = mapOctave(analogRead(SYNC_CONTROL));
+   syncPhaseInc = mapOctave();
   
   // Stepped pentatonic mapping: D, E, G, A, B
   // syncPhaseInc = mapPentatonic(analogRead(SYNC_CONTROL));
