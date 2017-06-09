@@ -20,27 +20,26 @@ uint8_t grainDecay;
 #define OCTAVE_CONTROL       (1)
 
 // Map Digital channels
-#define C         PB5
-#define Csharp    PB4
-#define D         PB3
-#define Dsharp    PB2
-#define E         PB1
-#define F         PB0
-#define Fsharp    PD7
-#define G         PD6
-#define Gsharp    PD5
-#define A         PB7
-#define Asharp    PB6
-#define B         PD4
-#define Cupper    PD2
-
+#define C         13//PB5
+#define Csharp    12//PB4
+#define D         11//PB3
+#define Dsharp    10//PB2
+#define E         9 //PB1
+#define F         8 //PB0
+#define Fsharp    7 //PD7
+#define G         6 //PD6
+#define Gsharp    5 //PD5
+#define A         4 //PD4
+#define Asharp    2 //PD2
+#define B         A4//PC4
+#define Cupper    A5//PC5
 
 // Changing these will also requires rewriting audioOn()
-// For modern ATmega168 and ATmega328 boards
-#define PWM_PIN       PC3
+
+#define PWM_PIN       3
 #define PWM_VALUE     OCR2B
-#define LED_PIN       2
-#define LED_PORT      PORTD
+#define LED_PIN       3
+#define LED_PORT      PORTC
 #define LED_BIT       5
 #define PWM_INTERRUPT TIMER2_OVF_vect
 
@@ -94,41 +93,38 @@ uint16_t Octave6Table[] = {
 
 
 uint16_t mapOctave() {
-
-  if (digitalRead(8)==0){
-    selectOctave(0);
-  }
-  else if (digitalRead(C)==0){
-    selectOctave(0);
-  }
-  else if (digitalRead(Csharp)==0){
-    selectOctave(1);
-  }
-  else if (digitalRead(D)==0){
-    selectOctave(2);
-  }
-  else if (digitalRead(Dsharp)==0){
-    selectOctave(3);
-  }
-  else if (digitalRead(E)==0){
-    selectOctave(4);
-  }
-  else if (digitalRead(F)==0){
-    selectOctave(5);
-  }
-  else if (digitalRead(Fsharp)==0){
-    selectOctave(6);
-  }
-  else if (digitalRead(G)==0){
-    selectOctave(7);
-  }
-  else if (digitalRead(Gsharp)==0){
-    selectOctave(8);
-  }
-  else if (digitalRead(A)==0){
+  
+  if (digitalRead(C)==0){
     selectOctave(9);
   }
-  else if (digitalRead(Asharp)==0){
+  /*else if (digitalRead(Csharp)==0){
+    selectOctave(1);
+  }*/
+  else if (digitalRead(D)==0){
+    selectOctave(7);
+  }
+ /* else if (digitalRead(Dsharp)==0){
+    selectOctave(3);
+  }*/
+  else if (digitalRead(E)==0){
+    selectOctave(5);
+  }
+  else if (digitalRead(F)==0){
+    selectOctave(4);
+  }
+ /* else if (digitalRead(Fsharp)==0){
+    selectOctave(6);
+  }*/
+  else if (digitalRead(G)==0){
+    selectOctave(2);
+  }
+  /*else if (digitalRead(Gsharp)==0){
+    selectOctave(8);
+  }*/
+  else if (digitalRead(A)==0){
+    selectOctave(0);
+  }
+ /* else if (digitalRead(Asharp)==0){
     selectOctave(10);
   }
   else if (digitalRead(B)==0){
@@ -136,7 +132,7 @@ uint16_t mapOctave() {
   }
   else if (digitalRead(Cupper)==0){
     selectOctave(12);
-  }
+  }*/
 }
 
 
@@ -189,7 +185,14 @@ void audioOn() {
 void setup() {
   
   pinMode(PWM_PIN,OUTPUT);
-  
+
+    pinMode(13,INPUT_PULLUP);
+  pinMode(12,INPUT_PULLUP);
+  pinMode(11,INPUT_PULLUP);
+  pinMode(10,INPUT_PULLUP);
+  pinMode(9,INPUT_PULLUP);
+  pinMode(8,INPUT_PULLUP);
+  /*
   pinMode(C,INPUT_PULLUP);
   pinMode(Csharp,INPUT_PULLUP);
   pinMode(D,INPUT_PULLUP);
@@ -203,13 +206,14 @@ void setup() {
   pinMode(Asharp,INPUT_PULLUP);
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
+  */
 /*
   DDRB = 0b00000000;    
   PORTB = 0b11111111;  
   */
   
   audioOn();
-  
+
   pinMode(LED_PIN,OUTPUT);
   Serial.begin(9600);
 }
@@ -224,7 +228,12 @@ void loop() {
 
   grainPhaseInc  = mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL)) / 2;
   grainDecay     = analogRead(GRAIN_DECAY_CONTROL) / 8;
+  /*Serial.print("  Grain:");
+  Serial.print(analogRead(GRAIN_FREQ_CONTROL));
+  Serial.print("  Decay:");
+  Serial.print(analogRead(GRAIN_DECAY_CONTROL));*/
 }
+
 
 SIGNAL(PWM_INTERRUPT)
 {
