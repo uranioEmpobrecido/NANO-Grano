@@ -1,7 +1,9 @@
-// Analog in 0: Grain 1 pitch
+// Analog in 0: Grain Frecuency Control
 // Analog in 1: Octave Selector
-// Analog in 2: Grain 1 decay
-// Analog in 4: Grain repetition frequency
+// Analog in 2: Grain Decay Control
+// Analog in 3: Attack Control (Not implemented)
+// Analog in 4: Decay Control (Not implemented)
+// Analog in 5: Tri-State Volume Control (Not implemented)
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -39,9 +41,6 @@ uint8_t grainDecay;
 //
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
-#define LED_PIN       13
-#define LED_PORT      PORTB
-#define LED_BIT       5
 #define PWM_INTERRUPT TIMER2_OVF_vect
 
 
@@ -188,7 +187,6 @@ void setup() {
 
   pinMode(PWM_PIN,OUTPUT);
   audioOn();
-  pinMode(LED_PIN,OUTPUT);
 
   pinMode(13,INPUT_PULLUP);
   pinMode(12,INPUT_PULLUP);
@@ -245,7 +243,6 @@ SIGNAL(PWM_INTERRUPT)
     // Time to start the next grain
     grainPhaseAcc = 0;
     grainAmp = 0x7fff;
-    LED_PORT ^= 1 << LED_BIT; // Faster than using digitalWrite
   }
 
   // Increment the phase of the grain oscillators
