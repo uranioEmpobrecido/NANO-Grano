@@ -5,7 +5,6 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <math.h>
 
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
@@ -35,13 +34,16 @@ uint8_t grainDecay;
 #define Cupper    A5//PC5
 
 // Changing these will also requires rewriting audioOn()
-
+// For modern ATmega168 and ATmega328 boards
+//    Output is on pin 3
+//
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
-#define LED_PIN       3
-#define LED_PORT      PORTC
+#define LED_PIN       13
+#define LED_PORT      PORTB
 #define LED_BIT       5
 #define PWM_INTERRUPT TIMER2_OVF_vect
+
 
 uint16_t freqMap, octaveMap;
 
@@ -93,86 +95,86 @@ uint16_t Octave6Table[] = {
 
 
 uint16_t mapOctave() {
-  
   if (digitalRead(C)==0){
-    selectOctave(9);
+    return selectOctave(9);
   }
   /*else if (digitalRead(Csharp)==0){
-    selectOctave(1);
+    return selectOctave(1);
   }*/
   else if (digitalRead(D)==0){
-    selectOctave(7);
+    return selectOctave(7);
   }
  /* else if (digitalRead(Dsharp)==0){
-    selectOctave(3);
+    return selectOctave(3);
   }*/
   else if (digitalRead(E)==0){
-    selectOctave(5);
+    return selectOctave(5);
   }
   else if (digitalRead(F)==0){
-    selectOctave(4);
+    return selectOctave(4);
   }
  /* else if (digitalRead(Fsharp)==0){
-    selectOctave(6);
+    return selectOctave(6);
   }*/
   else if (digitalRead(G)==0){
-    selectOctave(2);
+    return selectOctave(2);
   }
   /*else if (digitalRead(Gsharp)==0){
-    selectOctave(8);
+    return selectOctave(8);
   }*/
   else if (digitalRead(A)==0){
-    selectOctave(0);
+    return selectOctave(0);
   }
  /* else if (digitalRead(Asharp)==0){
-    selectOctave(10);
+    return selectOctave(10);
   }
   else if (digitalRead(B)==0){
-    selectOctave(11);
+    return selectOctave(11);
   }
   else if (digitalRead(Cupper)==0){
-    selectOctave(12);
+    return selectOctave(12);
   }*/
+  else return 0;
 }
 
 
 uint16_t selectOctave(uint8_t note){
-  
+
   inputOct = analogRead(OCTAVE_CONTROL);
   octaveMap = (inputOct*5)/1024;
-  
+  /*
   Serial.print("  Note:");
   Serial.print(note);
   Serial.print("  Octave:");
   Serial.print(octaveMap);
   Serial.print("\n");
-  
+  */
   if (octaveMap == 0){
-     Serial.print("Freq:");
-     Serial.print(Octave2Table[11-note]);
+    /* Serial.print("Freq:");
+     Serial.print(Octave2Table[11-note]);*/
     return Octave2Table[11-note];
   }
   if (octaveMap == 1){
-     Serial.print("Freq:");
-     Serial.print(Octave3Table[11-note]);
+    // Serial.print("Freq:");
+     //Serial.print(Octave3Table[11-note]);
     return Octave3Table[11-note];
   }
   if (octaveMap== 2){
-       Serial.print("Freq:");
-     Serial.print(Octave4Table[11-note]);
+     //  Serial.print("Freq:");
+    // Serial.print(Octave4Table[11-note]);
     return Octave4Table[11-note];
   }
   if (octaveMap == 3){
-       Serial.print("Freq:");
-     Serial.print(Octave5Table[11-note]);
+      // Serial.print("Freq:");
+    // Serial.print(Octave5Table[11-note]);
     return Octave5Table[11-note];
   }
   if (octaveMap == 4){
-       Serial.print("Freq:");
-     Serial.print(Octave6Table[11-note]);
+      // Serial.print("Freq:");
+     //Serial.print(Octave6Table[11-note]);
     return Octave6Table[11-note];
   }
-  
+
 }
 
 void audioOn() {
@@ -183,10 +185,12 @@ void audioOn() {
 }
 
 void setup() {
-  
-  pinMode(PWM_PIN,OUTPUT);
 
-    pinMode(13,INPUT_PULLUP);
+  pinMode(PWM_PIN,OUTPUT);
+  audioOn();
+  pinMode(LED_PIN,OUTPUT);
+
+  pinMode(13,INPUT_PULLUP);
   pinMode(12,INPUT_PULLUP);
   pinMode(11,INPUT_PULLUP);
   pinMode(10,INPUT_PULLUP);
@@ -208,21 +212,17 @@ void setup() {
   pinMode(Cupper,INPUT_PULLUP);
   */
 /*
-  DDRB = 0b00000000;    
-  PORTB = 0b11111111;  
+  DDRB = 0b00000000;
+  PORTB = 0b11111111;
   */
-  
-  audioOn();
-
-  pinMode(LED_PIN,OUTPUT);
   Serial.begin(9600);
 }
 
 void loop() {
-  
+
   // Stepped Fotomapping to MIDI notes: C, Db, D, Eb, E, F...
   syncPhaseInc = mapOctave();
-  
+
   // Stepped pentatonic mapping: D, E, G, A, B
   // syncPhaseInc = mapPentatonic(analogRead(SYNC_CONTROL));
 
@@ -247,7 +247,7 @@ SIGNAL(PWM_INTERRUPT)
     grainAmp = 0x7fff;
     LED_PORT ^= 1 << LED_BIT; // Faster than using digitalWrite
   }
-  
+
   // Increment the phase of the grain oscillators
   grainPhaseAcc += grainPhaseInc;
 
@@ -264,6 +264,6 @@ SIGNAL(PWM_INTERRUPT)
   output >>= 9;
   if (output > 255) output = 255;
 
-  // Output to PWM (this is faster than using analogWrite)  
+  // Output to PWM (this is faster than using analogWrite)
   PWM_VALUE = output;
 }
