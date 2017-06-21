@@ -166,12 +166,12 @@ void AttackDecay(void){
     pulseHigh(20);
   }
   else if (keyReleased == true){
-    pulseLow(25);
+    pulseLow(20);
   }
 }
 
 void Decay(){
-  pulseLow(25);
+  pulseLow(20);
 }
 
 uint16_t mapOctave() {
@@ -182,56 +182,63 @@ uint16_t mapOctave() {
   }
   /*else if (digitalRead(Csharp)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(1);
   }*/
   else if (digitalRead(D)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(7);
   }
  /* else if (digitalRead(Dsharp)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(3);
   }*/
   else if (digitalRead(E)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(5);
   }
   else if (digitalRead(F)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(4);
   }
  /* else if (digitalRead(Fsharp)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(6);
   }*/
   else if (digitalRead(G)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(2);
   }
   /*else if (digitalRead(Gsharp)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(8);
   }*/
   else if (digitalRead(A)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(0);
   }
  /* else if (digitalRead(Asharp)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(10);
   }
   else if (digitalRead(B)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(11);
   }
   else if (digitalRead(Cupper)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(12);
-  }*/
- /* else if (keyReleased){
-    Decay();
-    Serial.println("Decay Released");
- 
   }*/
   else {
     if (decayState) {
