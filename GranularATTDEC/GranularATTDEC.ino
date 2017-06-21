@@ -55,6 +55,8 @@ int8_t dB = -20;
 int8_t maxdB = 3;
 int8_t mindB = -20;
 
+uint16_t attack, decay;
+
 uint16_t freqMap, octaveMap;
 
 uint16_t input, inputOct;
@@ -125,9 +127,10 @@ void setHigh(int pin){
 
 void pulseLow(int pulses){
   dB = dB - pulses*1.25;
+  decay  = ((analogRead(A4)/1024)*1600);
   for (int i = 0; i <= pulses; i++){
     setLow(pinTriState);
-    delayMicroseconds(1000); //200 to 1600 OK
+    delayMicroseconds(decay); //200 to 1600 OK
     setHighZ(pinTriState);
     delayMicroseconds(1000); //Fixed OK
 
@@ -137,9 +140,10 @@ void pulseLow(int pulses){
 
 void pulseHigh(int pulses){
   dB = dB + pulses*1.25;
+  attack = (((analogRead(A3)/1024)*1400)+200);
   for (int i = 0; i <= pulses; i++){
     setHigh(pinTriState);
-    delayMicroseconds(1600); //200 to 1600 OK
+    delayMicroseconds(attack); //200 to 1600 OK
     setHighZ(pinTriState);
     delayMicroseconds(1000); //Fixed OK
   }
