@@ -53,6 +53,8 @@ uint8_t grainDecay;
 bool keyPressed  = false;
 bool keyReleased = false;
 
+bool decayState = false;
+
 int8_t dB = -20;
 int8_t maxdB = 3;
 int8_t mindB = -20;
@@ -63,6 +65,8 @@ uint16_t freqMap, octaveMap;
 
 uint16_t input, inputOct;
 uint8_t note, state;
+
+uint16_t decayNote;
 
 // Smooth logarithmic mapping
 //
@@ -128,32 +132,27 @@ void setHigh(int pin){
   }
 
 void pulseLow(int pulses){
-  
-  //decay  = analogRead(A4)+800;
-  decay = 800;
-  Serial.print("DECAY:");
-  Serial.println(decay);
+
+  decay  = (analogRead(A4)/100)+1;
   for (int i = 0; i <= pulses; i++){
     setLow(pinTriState);
-    delayMicroseconds(decay);//?
+    delay(decay);//?
     setHighZ(pinTriState);
-    delayMicroseconds(1000); //Fixed OK
+    delay(8); //Fixed OK
   }
-  decay = 0;
+  //decay = 0;
 }
 
 void pulseHigh(int pulses){
 
   attack = analogRead(A3)+200;
-  Serial.print("ATTACK:");
-  Serial.println(attack);
   for (int i = 0; i <= pulses; i++){
     setHigh(pinTriState);
     delayMicroseconds(attack); //200 to 1600 OK
     setHighZ(pinTriState);
     delayMicroseconds(1000); //Fixed OK
   }
-  attack = 0;
+  //attack = 0;
 }
 
 
@@ -165,19 +164,20 @@ void AttackDecay(void){
 
   if (keyPressed == true){
     pulseHigh(20);
-    Serial.println("ATT");
   }
   else if (keyReleased == true){
-    delay(decay);
     pulseLow(25);
-    Serial.println("DEC");
   }
 }
 
+void Decay(){
+  pulseLow(25);
+}
 
 uint16_t mapOctave() {
   if (digitalRead(C)==0){
     keyPressed = true;
+    decayState = true;
     return selectOctave(9);
   }
   /*else if (digitalRead(Csharp)==0){
@@ -228,7 +228,17 @@ uint16_t mapOctave() {
     keyPressed = true;
     return selectOctave(12);
   }*/
+ /* else if (keyReleased){
+    Decay();
+    Serial.println("Decay Released");
+ 
+  }*/
   else {
+    if (decayState) {
+      Serial.println("DECAY");
+      Decay();
+    }
+    decayState = false;
     keyPressed = false;
     return 0;
   }
