@@ -1,3 +1,4 @@
+
 // Analog in 0: Grain Frecuency Control
 // Analog in 1: Octave Selector
 // Analog in 2: Grain Decay Control
@@ -7,6 +8,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <math.h>
 
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
@@ -126,28 +128,32 @@ void setHigh(int pin){
   }
 
 void pulseLow(int pulses){
-  dB = dB - pulses*1.25;
-  decay  = ((analogRead(A4)/1024)*1600);
+  
+  //decay  = analogRead(A4)+800;
+  decay = 800;
+  Serial.print("DECAY:");
+  Serial.println(decay);
   for (int i = 0; i <= pulses; i++){
     setLow(pinTriState);
-    delayMicroseconds(decay); //200 to 1600 OK
+    delayMicroseconds(decay);//?
     setHighZ(pinTriState);
     delayMicroseconds(1000); //Fixed OK
-
   }
-  //Serial.println(dB);
+  decay = 0;
 }
 
 void pulseHigh(int pulses){
-  dB = dB + pulses*1.25;
-  attack = (((analogRead(A3)/1024)*1400)+200);
+
+  attack = analogRead(A3)+200;
+  Serial.print("ATTACK:");
+  Serial.println(attack);
   for (int i = 0; i <= pulses; i++){
     setHigh(pinTriState);
     delayMicroseconds(attack); //200 to 1600 OK
     setHighZ(pinTriState);
     delayMicroseconds(1000); //Fixed OK
   }
-  //Serial.println(dB);
+  attack = 0;
 }
 
 
@@ -158,12 +164,13 @@ void AttackDecay(void){
   } else { keyReleased = false;}
 
   if (keyPressed == true){
-    pulseHigh(24);
-    Serial.println("ATTACK");
+    pulseHigh(20);
+    Serial.println("ATT");
   }
   else if (keyReleased == true){
-    pulseLow(24);
-    Serial.println("DECAY");
+    delay(decay);
+    pulseLow(25);
+    Serial.println("DEC");
   }
 }
 
@@ -232,6 +239,7 @@ uint16_t selectOctave(uint8_t note){
 
   inputOct = analogRead(OCTAVE_CONTROL);
   octaveMap = (inputOct*5)/1024;
+
   /*
   Serial.print("  Note:");
   Serial.print(note);
@@ -309,20 +317,20 @@ void setup() {
   Serial.begin(9600);
 }
 
-
-void loop() {
-  AttackDecay();
+void AudioProcess(){
+  
   state = syncPhaseInc;
   syncPhaseInc = mapOctave();
-
-  //AttackDecay();
-
   grainPhaseInc  = mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL)) / 2;
   grainDecay     = analogRead(GRAIN_DECAY_CONTROL) / 8;
-  /*Serial.print("  Grain:");
-  Serial.print(analogRead(GRAIN_FREQ_CONTROL));
-  Serial.print("  Decay:");
-  Serial.print(analogRead(GRAIN_DECAY_CONTROL));*/
+  
+}
+
+void loop() {
+  
+  AudioProcess();
+  AttackDecay();
+  
 }
 
 
