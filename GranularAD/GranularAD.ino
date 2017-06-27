@@ -52,6 +52,9 @@ uint8_t grainDecay;
 bool keyPressed  = false;
 bool keyReleased = false;
 
+bool attackEnable  = false;
+bool decayEnable = false;
+
 bool decayState = false;
 
 int8_t dB = -20;
@@ -132,7 +135,7 @@ void setHigh(int pin){
 
 void pulseLow(int pulses){
 
-  decay  = (analogRead(A4)/100)+1;
+  decay  = (analogRead(DECAY_CONTROL)/100)+1;
   for (int i = 0; i <= pulses; i++){
     setLow(pinTriState);
     delay(decay);//?
@@ -144,7 +147,7 @@ void pulseLow(int pulses){
 
 void pulseHigh(int pulses){
 
-  attack = analogRead(A3)+200;
+  attack = (analogRead(ATTACK_CONTROL)+200);
   for (int i = 0; i <= pulses; i++){
     setHigh(pinTriState);
     delayMicroseconds(attack); //200 to 1600 OK
@@ -155,97 +158,90 @@ void pulseHigh(int pulses){
 }
 
 
-void AttackDecay(void){
-
-  if (state != 0 && syncPhaseInc == 0){
-    keyReleased = true;
-  } else { keyReleased = false;}
-
-  if (keyPressed == true){
+void ADProcess(){
+  if (analogRead(ATTACK_CONTROL) > 200 && keyPressed){
+    Serial.println("Attack");
     pulseHigh(20);
   }
-  else if (keyReleased == true){
+  else if (analogRead(DECAY_CONTROL) > 200 && keyReleased){
+    Serial.println("Decay");
     pulseLow(20);
+    keyPressed  = false;
+    keyReleased = false;
   }
-}
-
-void Decay(){
-  pulseLow(20);
 }
 
 uint16_t mapOctave() {
   if (digitalRead(C)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(9);
   }
   /*else if (digitalRead(Csharp)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(1);
   }*/
   else if (digitalRead(D)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(7);
   }
  /* else if (digitalRead(Dsharp)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(3);
   }*/
   else if (digitalRead(E)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(5);
   }
   else if (digitalRead(F)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(4);
   }
  /* else if (digitalRead(Fsharp)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(6);
   }*/
   else if (digitalRead(G)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(2);
   }
   /*else if (digitalRead(Gsharp)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(8);
   }*/
   else if (digitalRead(A)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(0);
   }
  /* else if (digitalRead(Asharp)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(10);
   }
   else if (digitalRead(B)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(11);
   }
   else if (digitalRead(Cupper)==0){
     keyPressed = true;
-    decayState = true;
+    ADProcess();
     return selectOctave(12);
   }*/
   else {
-    if (decayState) {
-      Serial.println("DECAY");
-      Decay();
+    if (keyPressed) {
+      keyReleased = true;
+      ADProcess();
     }
-    decayState = false;
-    keyPressed = false;
     return 0;
   }
 }
@@ -345,7 +341,6 @@ void AudioProcess(){
 void loop() {
   
   AudioProcess();
-  AttackDecay();
   
 }
 
