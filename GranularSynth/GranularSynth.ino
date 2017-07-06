@@ -17,8 +17,8 @@ uint8_t grainDecay;
 
 // Map Analogue channels
 #define GRAIN_FREQ_CONTROL   (0)
-#define GRAIN_DECAY_CONTROL  (2)
-#define OCTAVE_CONTROL       (1)
+#define GRAIN_DECAY_CONTROL  (1)
+#define OCTAVE_CONTROL       (2)
 
 // Map Digital channels
 #define C         13//PB5
@@ -35,14 +35,9 @@ uint8_t grainDecay;
 #define B         1 //PD1
 #define Cupper    0 //PD0
 
-// Changing these will also requires rewriting audioOn()
-// For modern ATmega168 and ATmega328 boards
-//    Output is on pin 3
-//
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
 #define PWM_INTERRUPT TIMER2_OVF_vect
-
 
 uint16_t freqMap, octaveMap;
 
@@ -63,34 +58,23 @@ uint16_t mapPhaseInc(uint16_t input) {
 
 // Vibiss mapping OCTAVE 2
 //
-uint16_t Octave2Table[] = {
-  65,69,73,77,82,86,92,97,103,109,115,122,129
-};
+uint16_t Octave2Table[13] = {65,69,73,78,82,87,93,98,104,110,117,123,131};
 
 // Vibiss mapping OCTAVE 3
 //
-uint16_t Octave3Table[] = {
-  131,139,147,156,165,175,185,196,208,220,233,247
-};
+uint16_t Octave3Table[13] = {131,139,147,156,165,175,185,196,208,220,233,247,262};
 
 // Vibiss mapping OCTAVE 4
 //
-uint16_t Octave4Table[] = {
-  262,277,294,311,330,349,370,392,415,440,466,494
-};
+uint16_t Octave4Table[13] = {262,277,294,311,330,349,370,392,415,440,466,494,523};
 
 // Vibiss mapping OCTAVE 5
 //
-uint16_t Octave5Table[] = {
-  523,554,587,622,659,698,740,784,831,880,932,988
-};
-
+uint16_t Octave5Table[13] = {523,554,587,622,659,698,740,784,831,880,932,988,1047};
 
 // Vibiss mapping OCTAVE 6
 //
-uint16_t Octave6Table[] = {
-  1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976
-};
+uint16_t Octave6Table[13] = {1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093};
 
 
 uint16_t mapOctave() {
@@ -127,9 +111,9 @@ uint16_t mapOctave() {
   else if (digitalRead(Asharp)==0){
     return selectOctave(2);
   }
-  /*else if (digitalRead(B)==0){
+  else if (digitalRead(B)==0){
     return selectOctave(1);
-  }*/
+  }
   else if (digitalRead(Cupper)==0){
     return selectOctave(0);
   }
@@ -139,38 +123,37 @@ uint16_t mapOctave() {
 
 uint16_t selectOctave(uint8_t note){
 
-  inputOct = analogRead(OCTAVE_CONTROL);
-  octaveMap = (inputOct*5)/1024;
-  
+  octaveMap = (analogRead(OCTAVE_CONTROL)*5)/1024;
+  /*
   Serial.print("  Note:");
   Serial.print(note);
   Serial.print("  Octave:");
   Serial.print(octaveMap);
   Serial.print("\n");
-  
+  */
   if (octaveMap == 0){
-     Serial.print("Freq:");
-     Serial.print(Octave2Table[11-note]);
+     //Serial.print("Freq:");
+     //Serial.print(Octave2Table[12-note]);
     return Octave2Table[12-note];
   }
   if (octaveMap == 1){
-     Serial.print("Freq:");
-     Serial.print(Octave3Table[11-note]);
+     //Serial.print("Freq:");
+     //Serial.print(Octave3Table[12-note]);
     return Octave3Table[12-note];
   }
   if (octaveMap== 2){
-     Serial.print("Freq:");
-     Serial.print(Octave4Table[11-note]);
+     //Serial.print("Freq:");
+     //Serial.print(Octave4Table[12-note]);
     return Octave4Table[12-note];
   }
   if (octaveMap == 3){
-     Serial.print("Freq:");
-     Serial.print(Octave5Table[11-note]);
+     //Serial.print("Freq:");
+     //Serial.print(Octave5Table[12-note]);
     return Octave5Table[12-note];
   }
   if (octaveMap == 4){
-     Serial.print("Freq:");
-     Serial.print(Octave6Table[11-note]);
+     //Serial.print("Freq:");
+     //Serial.print(Octave6Table[12-note]);
     return Octave6Table[12-note];
   }
 
@@ -186,6 +169,7 @@ void audioOn() {
 void setup() {
 
   pinMode(PWM_PIN,OUTPUT);
+  
   audioOn();
   
   pinMode(C,INPUT_PULLUP);
@@ -202,23 +186,15 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
-
-  // Stepped Fotomapping to MIDI notes: C, Db, D, Eb, E, F...
-  syncPhaseInc = mapOctave();
-
-  // Stepped pentatonic mapping: D, E, G, A, B
-  // syncPhaseInc = mapPentatonic(analogRead(SYNC_CONTROL));
-
-  grainPhaseInc  = mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL)) / 2;
-  grainDecay     = analogRead(GRAIN_DECAY_CONTROL) / 8;
-  /*Serial.print("  Grain:");
-  Serial.print(analogRead(GRAIN_FREQ_CONTROL));
-  Serial.print("  Decay:");
-  Serial.print(analogRead(GRAIN_DECAY_CONTROL));*/
+  
+  syncPhaseInc   =  mapOctave();
+  grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL)) / 2;
+  grainDecay     =  analogRead(GRAIN_DECAY_CONTROL) / 8;
+  
 }
 
 
