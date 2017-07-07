@@ -20,20 +20,27 @@ uint8_t grainDecay;
 #define GRAIN_DECAY_CONTROL  (1)
 #define OCTAVE_CONTROL       (2)
 
+//MASK
+#define PORT_B  0
+#define PORT_D  1
+
+//Capacitive Threshold
+#define cap 6
+
 // Map Digital channels
-#define C         13//PB5
-#define Csharp    12//PB4
-#define D         11//PB3
-#define Dsharp    10//PB2
-#define E         9 //PB1
-#define F         8 //PB0
-#define Fsharp    7 //PD7
-#define G         6 //PD6
-#define Gsharp    5 //PD5
-#define A         4 //PD4
-#define Asharp    2 //PD2
-#define B         1 //PD1
-#define Cupper    0 //PD0
+#define C         13  //PB5 - OK
+#define Csharp    12  //PB4 - OK
+#define D         11  //PB3 - OK 
+#define Dsharp    10  //PB2 - OK 
+#define E         9   //PB1 - OK
+#define F         8   //PB0 - OK
+#define Fsharp    7   //PD7 - OK 
+#define G         6   //PD6 - OK
+#define Gsharp    5   //PD5 - OK
+#define A         4   //PD4 - OK 
+#define Asharp    2   //PD2 - OK
+#define B         1   //PD1 - OK 
+#define Cupper    0   //PD0 - OK
 
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
@@ -54,6 +61,71 @@ uint16_t antilogTable[] = {
 };
 uint16_t mapPhaseInc(uint16_t input) {
   return (antilogTable[input & 0x3f]) >> (input >> 6);
+}
+
+//---------- Capacitive Touch sensing -----------------------------
+uint8_t readCapacitivePin(int pinToMeasure) {
+
+  // Variables used to translate from Arduino to AVR pin naming
+  volatile uint8_t* port;
+  volatile uint8_t* ddr;
+  volatile uint8_t* pin;
+  // Here we translate the input pin number from
+  //  Arduino pin number to the AVR PORT, PIN, DDR,
+  //  and which bit of those registers we care about.
+  byte bitmask;
+  port = portOutputRegister(digitalPinToPort(pinToMeasure));
+  ddr = portModeRegister(digitalPinToPort(pinToMeasure));
+  bitmask = digitalPinToBitMask(pinToMeasure);
+  pin = portInputRegister(digitalPinToPort(pinToMeasure));
+  // Discharge the pin first by setting it low and output
+  *port &= ~(bitmask);
+  *ddr  |= bitmask;
+  //delay(1);
+  uint8_t SREG_old = SREG; //back up the AVR Status Register
+  // Prevent the timer IRQ from disturbing our measurement
+  noInterrupts();
+  // Make the pin an input with the internal pull-up on
+  *ddr &= ~(bitmask);
+  *port |= bitmask;
+
+  // Now see how long the pin to get pulled up. This manual unrolling of the loop
+  // decreases the number of hardware cycles between each read of the pin,
+  // thus increasing sensitivity.
+
+  uint8_t cycles = 17;
+
+  if (*pin & bitmask) { cycles =  0;}
+  else if (*pin & bitmask) { cycles =  1;}
+  else if (*pin & bitmask) { cycles =  2;}
+  else if (*pin & bitmask) { cycles =  3;}
+  else if (*pin & bitmask) { cycles =  4;}
+  else if (*pin & bitmask) { cycles =  5;}
+  else if (*pin & bitmask) { cycles =  6;}
+  else if (*pin & bitmask) { cycles =  7;}
+  else if (*pin & bitmask) { cycles =  8;}
+  else if (*pin & bitmask) { cycles =  9;}
+  else if (*pin & bitmask) { cycles = 10;}
+  else if (*pin & bitmask) { cycles = 11;}
+  else if (*pin & bitmask) { cycles = 12;}
+  else if (*pin & bitmask) { cycles = 13;}
+  else if (*pin & bitmask) { cycles = 14;}
+  else if (*pin & bitmask) { cycles = 15;}
+  else if (*pin & bitmask) { cycles = 16;}
+
+  // End of timing-critical section; turn interrupts back on if they were on before, or leave them off if they were off before
+
+  SREG = SREG_old;
+  
+  // Discharge the pin again by setting it low and output
+  //  It's important to leave the pins low if you want to 
+  //  be able to touch more than 1 sensor at a time - if
+  //  the sensor is left pulled high, when you touch
+  //  two sensors, your body will transfer the charge between
+  //  sensors.
+  *port &= ~(bitmask);
+  *ddr  |= bitmask;
+  return cycles;
 }
 
 // Vibiss mapping OCTAVE 2
@@ -78,43 +150,43 @@ uint16_t Octave6Table[13] = {1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1
 
 
 uint16_t mapOctave() {
-  if (digitalRead(C)==0){
+  if (readCapacitivePin(C)>cap){
     return selectOctave(12);
   }
-  else if (digitalRead(Csharp)==0){
+  else if (readCapacitivePin(Csharp)>cap){
     return selectOctave(11);
   }
-  else if (digitalRead(D)==0){
+  else if (readCapacitivePin(D)>cap){
     return selectOctave(10);
   }
-  else if (digitalRead(Dsharp)==0){
+  else if (readCapacitivePin(Dsharp)>cap){
     return selectOctave(9);
   }
-  else if (digitalRead(E)==0){
+  else if (readCapacitivePin(E)>cap){
     return selectOctave(8);
   }
-  else if (digitalRead(F)==0){
+  else if (readCapacitivePin(F)>cap){
     return selectOctave(7);
   }
-  else if (digitalRead(Fsharp)==0){
+  else if (readCapacitivePin(Fsharp)>cap){
     return selectOctave(6);
   }
-  else if (digitalRead(G)==0){
+  else if (readCapacitivePin(G)>cap){
     return selectOctave(5);
   }
-  else if (digitalRead(Gsharp)==0){
+  else if (readCapacitivePin(Gsharp)>cap){
     return selectOctave(4);
   }
-  else if (digitalRead(A)==0){
+  else if (readCapacitivePin(A)>cap){
     return selectOctave(3);
   }
-  else if (digitalRead(Asharp)==0){
+  else if (readCapacitivePin(Asharp)>cap){
     return selectOctave(2);
   }
-  else if (digitalRead(B)==0){
+  else if (readCapacitivePin(B)>cap){
     return selectOctave(1);
   }
-  else if (digitalRead(Cupper)==0){
+  else if (readCapacitivePin(Cupper)>cap){
     return selectOctave(0);
   }
   else return 0;
