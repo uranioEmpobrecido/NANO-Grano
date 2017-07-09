@@ -57,11 +57,10 @@ uint16_t input, inputOct;
 
 uint8_t note;
 
-
 bool attackNote = false;
 bool releaseNote = false;
 
-uint8_t attackCount, releaseCount;
+uint8_t attackCount, releaseCount, pulseCount;
 
 // Smooth logarithmic mapping
 //
@@ -198,27 +197,35 @@ void pulseHigh(void){
 
 void attackProcess(void){
 
-  if (analogRead(ATTACK_CONTROL)>250){
-    if (attackCount < 25){ 
-    pulseHigh();
-    Serial.println(attackCount);
-    }
-  attackCount++;
-  delay((analogRead(ATTACK_CONTROL)/20));
-  } else { Serial.println("NOT ATTACK");}
+  if (analogRead(ATTACK_CONTROL)>125){
+    attackCount++;
+    if (attackCount < 32){ 
+      pulseCount++;
+      pulseHigh();
+      Serial.println(pulseCount);
+      }
+      delay((analogRead(ATTACK_CONTROL)/50));
+      } else { Serial.println("NOT ATTACK");}
   releaseCount = 0;
   releaseNote = true;
   attackNote = false;
 }
 
 void releaseProcess(void){
-  if (analogRead(RELEASE_CONTROL)>250){
-    while (releaseCount < 25 && releaseNote){ 
+  uint8_t i = 0;
+  if (attackCount >= 31){ i = 32;}
+  else i = attackCount;
+  if (analogRead(RELEASE_CONTROL)>125){
+    while (releaseCount < i && releaseNote){ 
+      while (releaseCount < i){
     pulseLow();
-    Serial.println("RELEASE");
+    Serial.println(releaseCount);
     releaseCount++;
-    delay((analogRead(RELEASE_CONTROL)/20));
-    }} else { Serial.println("NOT RELEASE");}
+    delay((analogRead(RELEASE_CONTROL)/50));
+    }
+  }
+ } else { Serial.println("NOT RELEASE");}
+  pulseCount = 0;
   attackCount = 0;
   attackNote = true;
 }
