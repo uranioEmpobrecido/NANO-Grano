@@ -30,7 +30,7 @@ uint8_t grainDecay;
 #define PORT_D  1
 
 //Capacitive Threshold
-#define Threshold 5
+#define Threshold 6
 
 // Map Digital channels
 #define C         13  //PB5 - OK
@@ -213,18 +213,15 @@ void attackProcess(void){
       delay((analogRead(ATTACK_CONTROL)-125)/50);
       } else { 
         noAttack = true;
-        attackCount = 32;
-        if (!dbAdjust){
-          for (uint8_t i = 0; i < 32; i++){
-            pulseHigh();
+        if (32 > attackCount && pulseCount < 32){ 
+          attackCount++;
+          pulseCount++;
+          pulseHigh();
           }
-          dbAdjust = true;
-        }
       }
   releaseCount = 0;
   releaseNote = true;
   attackNote = false;
-  dbLowAdj = false;
 }
 
 void releaseProcess(void){
@@ -243,13 +240,14 @@ void releaseProcess(void){
     dbAdjust = false;
   }
  } else { 
-  if (!dbLowAdj){
-    for (uint8_t i = 0; i < 32; i++){
-      pulseLow();
-      Serial.println(i);
-      }
-      dbLowAdj = true;
-  }
+    noRelease = false;
+    while (releaseCount < i && releaseNote){ 
+      while (releaseCount < i){
+        pulseLow();
+        releaseCount++;
+        }
+    }
+    dbAdjust = false;
   noRelease = true;
   }
   pulseCount = 0;
@@ -302,14 +300,14 @@ uint16_t mapOctave() {
     attackProcess();
     return selectOctave(2);
   }
-  /*else if (readCapacitivePin(B)>Threshold){
+  else if (readCapacitivePin(B)>Threshold){
     attackProcess();
     return selectOctave(1);
   }
   else if (readCapacitivePin(Cupper)>Threshold){
     attackProcess();
     return selectOctave(0);
-  }*/
+  }
   else releaseProcess();
   return 0;
 }
@@ -380,7 +378,7 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
