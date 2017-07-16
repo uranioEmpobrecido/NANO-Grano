@@ -77,8 +77,16 @@ uint16_t antilogTable[64] = {
   38548,38133,37722,37316,36914,36516,36123,35734,35349,34968,34591,34219,33850,33486,33125,32768
 };
 uint16_t mapPhaseInc(uint16_t input) {
-  //Serial.println(antilogTable[input & 0x3f] >> ((input >> 6)));
-  return (antilogTable[input & 0x3f]) >> (input >> 6);
+  if (analogRead(GRAIN_DECAY_CONTROL) > 75){
+    if (((antilogTable[input & 0x3f]) >> (input >> 6)) < 5000){
+      return (5000);
+      }
+    else {
+      return ((antilogTable[input & 0x3f]) >> (input >> 6)); 
+      }
+    } else {
+  return ((antilogTable[input & 0x3f]) >> (input >> 6));
+  }
 }
 
 //---------- Thresholdacitive Touch sensing -----------------------------
