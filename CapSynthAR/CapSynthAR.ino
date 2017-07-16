@@ -70,13 +70,14 @@ uint8_t attackCount, releaseCount, pulseCount;
 
 // Smooth logarithmic mapping
 //
-uint16_t antilogTable[] = {
+uint16_t antilogTable[64] = {
   64830,64132,63441,62757,62081,61413,60751,60097,59449,58809,58176,57549,56929,56316,55709,55109,
   54515,53928,53347,52773,52204,51642,51085,50535,49991,49452,48920,48393,47871,47356,46846,46341,
   45842,45348,44859,44376,43898,43425,42958,42495,42037,41584,41136,40693,40255,39821,39392,38968,
   38548,38133,37722,37316,36914,36516,36123,35734,35349,34968,34591,34219,33850,33486,33125,32768
 };
 uint16_t mapPhaseInc(uint16_t input) {
+  //Serial.println(antilogTable[input & 0x3f] >> ((input >> 6)));
   return (antilogTable[input & 0x3f]) >> (input >> 6);
 }
 
@@ -188,17 +189,17 @@ void setHigh(int pin){
 void pulseLow(void){
 
     setLow(VCA_CONTROL);
-    delay(1);
+    delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    delay(1); //Fixed OK
+    delayMicroseconds(500); //Fixed OK
 }
 
 void pulseHigh(void){
 
     setHigh(VCA_CONTROL);
-    delay(1);
+    delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    delay(1); //Fixed OK
+    delayMicroseconds(500); //Fixed OK
 }
 
 void attackProcess(void){
@@ -210,7 +211,7 @@ void attackProcess(void){
       pulseCount++;
       pulseHigh();
       }
-      delay((analogRead(ATTACK_CONTROL)-125)/50);
+      delay((analogRead(ATTACK_CONTROL)-125)/25);
       } else { 
         noAttack = true;
         if (32 > attackCount && pulseCount < 32){ 
@@ -235,7 +236,7 @@ void releaseProcess(void){
       while (releaseCount < i){
     pulseLow();
     releaseCount++;
-    delay((analogRead(RELEASE_CONTROL)-125)/50);
+    delay((analogRead(RELEASE_CONTROL)-125)/25);
     }
     dbAdjust = false;
   }
@@ -378,7 +379,7 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  //Serial.begin(9600);
+  Serial.begin(9600);
 }
 
 void loop() {
