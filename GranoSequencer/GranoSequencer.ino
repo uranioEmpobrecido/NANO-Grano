@@ -64,8 +64,8 @@ uint8_t grainDecay;
 
 // Changing these will also requires rewriting audioOn()
 // For modern ATmega168 and ATmega328 boards
-//    Output is on pin 3
-//
+// Output is on pin 3
+
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
 #define PWM_INTERRUPT TIMER2_OVF_vect
@@ -127,7 +127,6 @@ uint16_t Octave6Table[] = {
   1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976
 };
 
-//---------- Thresholdacitive Touch sensing -----------------------------
 uint8_t readCapacitivePin(int pinToMeasure) {
 
   // Variables used to translate from Arduino to AVR pin naming
@@ -217,27 +216,35 @@ uint16_t mapOctave() {
     return selectOctave(8);
   }
   else if (readCapacitivePin(F)>Threshold){
+    noteOk = true;
     return selectOctave(7);
   }
   else if (readCapacitivePin(Fsharp)>Threshold){
+    noteOk = true;
     return selectOctave(6);
   }
   else if (readCapacitivePin(G)>Threshold){
+    noteOk = true;
     return selectOctave(5);
   }
   else if (readCapacitivePin(Gsharp)>Threshold){
+    noteOk = true;
     return selectOctave(4);
   }
   else if (readCapacitivePin(A)>Threshold){
+    noteOk = true;
     return selectOctave(3);
   }
   else if (readCapacitivePin(Asharp)>Threshold){
+    noteOk = true;
     return selectOctave(2);
   }/*
   else if (readCapacitivePin(B)>Threshold){
+    noteOk = true;
     return selectOctave(1);
   }
   else if (readCapacitivePin(Cupper)>Threshold){
+    noteOk = true;
     return selectOctave(0);
   }*/
   }
@@ -280,42 +287,58 @@ void audioOn() {
   TIMSK2 = _BV(TOIE2);
 }
 
-uint16_t step1, step2, step3, step4;
+uint16_t step1, step2, step3, step4, step5, step6, step7, step8;
 
 bool selectNote1 = false;
 bool selectNote2 = false;
 bool selectNote3 = false;
 bool selectNote4 = false;
+bool selectNote5 = false;
+bool selectNote6 = false;
+bool selectNote7 = false;
+bool selectNote8 = false;
 
 
 void setSequence(void){
   while (!selectNote1){
-    Serial.println("SELECT NOTE 1");
     step1 = mapOctave();
-    Serial.println(step1);
     delay(500);
     selectNote1 = true;
   }
   while (!selectNote2){
-    Serial.println("SELECT NOTE 2");
     step2 = mapOctave();
-    Serial.println(step2);
     delay(500);
     selectNote2 = true;
   }
   while (!selectNote3){
-    Serial.println("SELECT NOTE 3");
     step3 = mapOctave();
-    Serial.println(step3);
     delay(500);
     selectNote3 = true;
   }
   while (!selectNote4){
-    Serial.println("SELECT NOTE 4");
     step4 = mapOctave();
-    Serial.println(step4);
     delay(500);
     selectNote4 = true;
+  }
+  while (!selectNote5){
+    step5 = mapOctave();
+    delay(500);
+    selectNote5 = true;
+  }
+  while (!selectNote6){
+    step6 = mapOctave();
+    delay(500);
+    selectNote6 = true;
+  }
+  while (!selectNote7){
+    step7 = mapOctave();
+    delay(500);
+    selectNote7 = true;
+  }
+  while (!selectNote8){
+    step8 = mapOctave();
+    delay(500);
+    selectNote8 = true;
   }
 }
 
@@ -327,6 +350,7 @@ uint8_t pattern = 0;
 void setup() {
   
   pinMode(PWM_PIN,OUTPUT);
+  
   audioOn();
   
   pinMode(C,INPUT_PULLUP);
@@ -350,18 +374,16 @@ void setup() {
  }
 
 void loop() {
-
-tempo = map(analogRead(TEMPO_CONTROL), 0, 1023, 10, 1200);
- counter++;
- //Serial.println(tempo);
- if (counter > tempo) {
- counter = 0;
- if (pattern == 4) {
- pattern = 0;
- }
-
-  grainPhaseInc  =  mapPhaseInc(GRAIN_FREQ_CONTROL) / 2;
- grainDecay     =  analogRead(GRAIN_DECAY_CONTROL) / 8;
+  
+  tempo = map(analogRead(TEMPO_CONTROL), 0, 1023, 10, 1200);
+  counter++;
+  if (counter > tempo) {
+    counter = 0;
+    if (pattern == 8) {
+      pattern = 0;
+      }
+      grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL))/2;
+      grainDecay     =  analogRead(GRAIN_DECAY_CONTROL)/8;
  
  switch (pattern) {
   
@@ -376,6 +398,18 @@ tempo = map(analogRead(TEMPO_CONTROL), 0, 1023, 10, 1200);
   break;
   case 3:
   syncPhaseInc = step4;
+  break;
+  case 4:
+  syncPhaseInc = step5;
+  break;
+  case 5:
+  syncPhaseInc = step6;
+  break;
+  case 6:
+  syncPhaseInc = step7;
+  break;
+  case 7:
+  syncPhaseInc = step8;
   break;
  }
  delay(tempo);
