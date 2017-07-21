@@ -1,18 +1,14 @@
+
 /*
  Auduino, the Lo-Fi granular synthesiser https://code.google.com/archive/p/tinkerit/downloads
  added a 4 step sequencer inspired by https://learn.sparkfun.com/tutorials/build-an-auduino-step-sequencer
  Tom Tobback Sep 2016
  BuffaloLabs www.cassiopeia.hk/kids
-
  LICENSE:
  Copyright (c) 2016 Tom Tobback 
-
  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 /* analog inputs:
  * A0 pitch step 1 (syncPhaseInc)
  * A1 pitch step 2
@@ -39,9 +35,17 @@ uint16_t grainAmp;
 uint8_t grainDecay;
 
 // Map Analogue channels
-#define GRAIN_FREQ_CONTROL   (0)
-#define GRAIN_DECAY_CONTROL  (1)
-#define OCTAVE_CONTROL       (2)
+#define GRAIN_FREQ_CONTROL   A0
+#define GRAIN_DECAY_CONTROL  A1
+#define OCTAVE_CONTROL       A2
+#define TEMPO_CONTROL        A3
+
+//MASK
+#define PORT_B  0
+#define PORT_D  1
+
+//Capacitive Threshold
+#define Threshold 6
 
 // Map Digital channels
 #define C         13//PB5
@@ -74,16 +78,24 @@ uint8_t note;
 
 // Smooth logarithmic mapping
  //
- uint16_t antilogTable[] = {
- 64830, 64132, 63441, 62757, 62081, 61413, 60751, 60097, 59449, 58809, 58176, 57549, 56929, 56316, 55709, 55109,
- 54515, 53928, 53347, 52773, 52204, 51642, 51085, 50535, 49991, 49452, 48920, 48393, 47871, 47356, 46846, 46341,
- 45842, 45348, 44859, 44376, 43898, 43425, 42958, 42495, 42037, 41584, 41136, 40693, 40255, 39821, 39392, 38968,
- 38548, 38133, 37722, 37316, 36914, 36516, 36123, 35734, 35349, 34968, 34591, 34219, 33850, 33486, 33125, 32768
- };
- uint16_t mapPhaseInc(uint16_t input) {
- return (antilogTable[input & 0x3f]) >> (input >> 6);
- }
-
+uint16_t antilogTable[64] = {
+  64830,64132,63441,62757,62081,61413,60751,60097,59449,58809,58176,57549,56929,56316,55709,55109,
+  54515,53928,53347,52773,52204,51642,51085,50535,49991,49452,48920,48393,47871,47356,46846,46341,
+  45842,45348,44859,44376,43898,43425,42958,42495,42037,41584,41136,40693,40255,39821,39392,38968,
+  38548,38133,37722,37316,36914,36516,36123,35734,35349,34968,34591,34219,33850,33486,33125,32768
+};
+uint16_t mapPhaseInc(uint16_t input) {
+  if (analogRead(GRAIN_DECAY_CONTROL) > 75){
+    if (((antilogTable[input & 0x3f]) >> (input >> 6)) < 5000){
+      return (5000);
+      }
+    else {
+      return ((antilogTable[input & 0x3f]) >> (input >> 6)); 
+      }
+    } else {
+  return ((antilogTable[input & 0x3f]) >> (input >> 6));
+  }
+}
 // Vibiss mapping OCTAVE 2
 //
 uint16_t Octave2Table[] = {
@@ -115,46 +127,120 @@ uint16_t Octave6Table[] = {
   1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976
 };
 
+//---------- Thresholdacitive Touch sensing -----------------------------
+uint8_t readCapacitivePin(int pinToMeasure) {
+
+  // Variables used to translate from Arduino to AVR pin naming
+  volatile uint8_t* port;
+  volatile uint8_t* ddr;
+  volatile uint8_t* pin;
+  // Here we translate the input pin number from
+  //  Arduino pin number to the AVR PORT, PIN, DDR,
+  //  and which bit of those registers we care about.
+  byte bitmask;
+  port = portOutputRegister(digitalPinToPort(pinToMeasure));
+  ddr = portModeRegister(digitalPinToPort(pinToMeasure));
+  bitmask = digitalPinToBitMask(pinToMeasure);
+  pin = portInputRegister(digitalPinToPort(pinToMeasure));
+  // Discharge the pin first by setting it low and output
+  *port &= ~(bitmask);
+  *ddr  |= bitmask;
+  //delay(1);
+  uint8_t SREG_old = SREG; //back up the AVR Status Register
+  // Prevent the timer IRQ from disturbing our measurement
+  noInterrupts();
+  // Make the pin an input with the internal pull-up on
+  *ddr &= ~(bitmask);
+  *port |= bitmask;
+
+  // Now see how long the pin to get pulled up. This manual unrolling of the loop
+  // decreases the number of hardware cycles between each read of the pin,
+  // thus increasing sensitivity.
+
+  uint8_t cycles = 17;
+
+  if (*pin & bitmask) { cycles =  0;}
+  else if (*pin & bitmask) { cycles =  1;}
+  else if (*pin & bitmask) { cycles =  2;}
+  else if (*pin & bitmask) { cycles =  3;}
+  else if (*pin & bitmask) { cycles =  4;}
+  else if (*pin & bitmask) { cycles =  5;}
+  else if (*pin & bitmask) { cycles =  6;}
+  else if (*pin & bitmask) { cycles =  7;}
+  else if (*pin & bitmask) { cycles =  8;}
+  else if (*pin & bitmask) { cycles =  9;}
+  else if (*pin & bitmask) { cycles = 10;}
+  else if (*pin & bitmask) { cycles = 11;}
+  else if (*pin & bitmask) { cycles = 12;}
+  else if (*pin & bitmask) { cycles = 13;}
+  else if (*pin & bitmask) { cycles = 14;}
+  else if (*pin & bitmask) { cycles = 15;}
+  else if (*pin & bitmask) { cycles = 16;}
+
+  // End of timing-critical section; turn interrupts back on if they were on before, or leave them off if they were off before
+
+  SREG = SREG_old;
+  
+  // Discharge the pin again by setting it low and output
+  //  It's important to leave the pins low if you want to 
+  //  be able to touch more than 1 sensor at a time - if
+  //  the sensor is left pulled high, when you touch
+  //  two sensors, your body will transfer the charge between
+  //  sensors.
+  *port &= ~(bitmask);
+  *ddr  |= bitmask;
+  return cycles;
+}
+
 uint16_t mapOctave() {
-  if (digitalRead(C)==0){
+  bool noteOk = false;
+  while (!noteOk){
+  if (readCapacitivePin(C)>Threshold){
+    Serial.println("LOL1");
+    noteOk = true;
     return selectOctave(12);
   }
-  else if (digitalRead(Csharp)==0){
+  else if (readCapacitivePin(Csharp)>Threshold){
+    noteOk = true;
     return selectOctave(11);
   }
-  else if (digitalRead(D)==0){
+  else if (readCapacitivePin(D)>Threshold){
+    noteOk = true;
     return selectOctave(10);
   }
-  else if (digitalRead(Dsharp)==0){
+  else if (readCapacitivePin(Dsharp)>Threshold){
+    noteOk = true;
     return selectOctave(9);
   }
-  else if (digitalRead(E)==0){
+  else if (readCapacitivePin(E)>Threshold){
+    noteOk = true;
     return selectOctave(8);
   }
-  else if (digitalRead(F)==0){
+  else if (readCapacitivePin(F)>Threshold){
     return selectOctave(7);
   }
-  else if (digitalRead(Fsharp)==0){
+  else if (readCapacitivePin(Fsharp)>Threshold){
     return selectOctave(6);
   }
-  else if (digitalRead(G)==0){
+  else if (readCapacitivePin(G)>Threshold){
     return selectOctave(5);
   }
-  else if (digitalRead(Gsharp)==0){
+  else if (readCapacitivePin(Gsharp)>Threshold){
     return selectOctave(4);
   }
-  else if (digitalRead(A)==0){
+  else if (readCapacitivePin(A)>Threshold){
     return selectOctave(3);
   }
-  else if (digitalRead(Asharp)==0){
+  else if (readCapacitivePin(Asharp)>Threshold){
     return selectOctave(2);
-  }
-  else if (digitalRead(B)==0){
+  }/*
+  else if (readCapacitivePin(B)>Threshold){
     return selectOctave(1);
   }
-  else if (digitalRead(Cupper)==0){
+  else if (readCapacitivePin(Cupper)>Threshold){
     return selectOctave(0);
-    }
+  }*/
+  }
 }
 
 
@@ -170,28 +256,18 @@ uint16_t selectOctave(uint8_t note){
   Serial.print("\n");
   */
   if (octaveMap == 0){
-    // Serial.print("Freq:");
-    // Serial.print(Octave2Table[11-note]);
     return Octave2Table[12-note];
   }
   if (octaveMap == 1){
-    // Serial.print("Freq:");
-    // Serial.print(Octave3Table[11-note]);
     return Octave3Table[12-note];
   }
-  if (octaveMap== 2){
-    // Serial.print("Freq:");
-    // Serial.print(Octave4Table[11-note]);
+  if (octaveMap == 2){
     return Octave4Table[12-note];
   }
   if (octaveMap == 3){
-    // Serial.print("Freq:");
-    // Serial.print(Octave5Table[11-note]);
     return Octave5Table[12-note];
   }
   if (octaveMap == 4){
-    // Serial.print("Freq:");
-    // Serial.print(Octave6Table[11-note]);
     return Octave6Table[12-note];
   }
 
@@ -214,23 +290,31 @@ bool selectNote4 = false;
 
 void setSequence(void){
   while (!selectNote1){
+    Serial.println("SELECT NOTE 1");
     step1 = mapOctave();
-    delay(300);
+    Serial.println(step1);
+    delay(500);
     selectNote1 = true;
   }
   while (!selectNote2){
+    Serial.println("SELECT NOTE 2");
     step2 = mapOctave();
-    delay(300);
+    Serial.println(step2);
+    delay(500);
     selectNote2 = true;
   }
   while (!selectNote3){
+    Serial.println("SELECT NOTE 3");
     step3 = mapOctave();
-    delay(300);
+    Serial.println(step3);
+    delay(500);
     selectNote3 = true;
   }
   while (!selectNote4){
+    Serial.println("SELECT NOTE 4");
     step4 = mapOctave();
-    delay(300);
+    Serial.println(step4);
+    delay(500);
     selectNote4 = true;
   }
 }
@@ -259,22 +343,28 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
 
-// presets for 3 less important pots
- grainDecay = 200 / 8;
-
- setSequence();
+  Serial.begin(9600);
+  
+  setSequence();
+ 
  }
 
 void loop() {
 
-tempo = map(analogRead(A4), 0, 1023, 100, 4000);
+tempo = map(analogRead(TEMPO_CONTROL), 0, 1023, 10, 1200);
  counter++;
+ //Serial.println(tempo);
  if (counter > tempo) {
  counter = 0;
  if (pattern == 4) {
  pattern = 0;
  }
+
+  grainPhaseInc  =  mapPhaseInc(GRAIN_FREQ_CONTROL) / 2;
+ grainDecay     =  analogRead(GRAIN_DECAY_CONTROL) / 8;
+ 
  switch (pattern) {
+  
   case 0:
   syncPhaseInc = step1;
   break;
@@ -288,35 +378,39 @@ tempo = map(analogRead(A4), 0, 1023, 100, 4000);
   syncPhaseInc = step4;
   break;
  }
-
-grainPhaseInc = mapPhaseInc(analogRead(A5)) / 2;
+ delay(tempo);
  pattern++;
  }
  }
 
 SIGNAL(PWM_INTERRUPT)
- {
- uint8_t value;
- uint16_t output;
+{
+  uint8_t value;
+  uint16_t output;
 
-syncPhaseAcc += syncPhaseInc;
- if (syncPhaseAcc < syncPhaseInc) {
- // Time to start the next grain
- grainPhaseAcc = 0;
- grainAmp = 0x7fff;
- if (grainPhaseAcc & 0x8000) value = ~value;
- // Multiply by current grain amplitude to get sample
- output = value * (grainAmp >> 8);
+  syncPhaseAcc += syncPhaseInc;
+  if (syncPhaseAcc < syncPhaseInc) {
+    // Time to start the next grain
+    grainPhaseAcc = 0;
+    grainAmp = 0x7fff;
+  }
 
-// Make the grain amplitudes decay by a factor every sample (exponential decay)
- grainAmp -= (grainAmp >> 8) * grainDecay;
+  // Increment the phase of the grain oscillators
+  grainPhaseAcc += grainPhaseInc;
 
-// Scale output to the available range, clipping if necessary
- output >>= 9;
- if (output > 255) output = 255;
+  // Convert phase into a triangle wave
+  value = (grainPhaseAcc >> 7) & 0xff;
+  if (grainPhaseAcc & 0x8000) value = ~value;
+  // Multiply by current grain amplitude to get sample
+  output = value * (grainAmp >> 8);
 
-// Output to PWM (this is faster than using analogWrite)
- PWM_VALUE = output;
- }
-} 
+  // Make the grain amplitudes decay by a factor every sample (exponential decay)
+  grainAmp -= (grainAmp >> 8) * grainDecay;
 
+  // Scale output to the available range, clipping if necessary
+  output >>= 9;
+  if (output > 255) output = 255;
+
+  // Output to PWM (this is faster than using analogWrite)
+  PWM_VALUE = output;
+}
