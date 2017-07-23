@@ -300,44 +300,64 @@ bool selectNote8 = false;
 
 
 void setSequence(void){
+
+  grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL))/2;
+  grainDecay     =  analogRead(GRAIN_DECAY_CONTROL)/8;
+  
   while (!selectNote1){
     step1 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote1 = true;
   }
   while (!selectNote2){
     step2 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote2 = true;
   }
   while (!selectNote3){
     step3 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote3 = true;
   }
   while (!selectNote4){
     step4 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote4 = true;
   }
   while (!selectNote5){
     step5 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote5 = true;
   }
   while (!selectNote6){
     step6 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote6 = true;
   }
   while (!selectNote7){
     step7 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote7 = true;
   }
   while (!selectNote8){
     step8 = mapOctave();
-    delay(500);
+    syncPhaseInc = mapOctave();
+    delay(1000);
+    syncPhaseInc = 0;
     selectNote8 = true;
   }
 }
