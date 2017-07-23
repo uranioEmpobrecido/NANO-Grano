@@ -1,29 +1,3 @@
-
-/*
- Auduino, the Lo-Fi granular synthesiser https://code.google.com/archive/p/tinkerit/downloads
- added a 4 step sequencer inspired by https://learn.sparkfun.com/tutorials/build-an-auduino-step-sequencer
- Tom Tobback Sep 2016
- BuffaloLabs www.cassiopeia.hk/kids
- LICENSE:
- Copyright (c) 2016 Tom Tobback 
- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-/* analog inputs:
- * A0 pitch step 1 (syncPhaseInc)
- * A1 pitch step 2
- * A2 pitch step 3
- * A3 pitch step 4
- * A4 tempo
- * A5 effect (grainPhaseInc)
- * plus volume potentiometer
- *
- * audio out via 220 ohm resistor to 3.5mm jack
- * audio out via 10K/10K voltage divider and 10K volume pot and 10uF cap to internal mono amp with speaker
- * power switch on amp
- * built with Arduino Nano on perf board powered by USB cable
- */
-
 #include <avr/io.h>
  #include <avr/interrupt.h>
 
@@ -39,6 +13,7 @@ uint8_t grainDecay;
 #define GRAIN_DECAY_CONTROL  A1
 #define OCTAVE_CONTROL       A2
 #define TEMPO_CONTROL        A3
+#define DUTY_CYCLE_CONTROL   A4
 
 //MASK
 #define PORT_B  0
@@ -75,6 +50,7 @@ uint16_t freqMap, octaveMap;
 uint16_t input, inputOct;
 uint8_t note;
 
+uint16_t i;
 
 // Smooth logarithmic mapping
  //
@@ -307,58 +283,30 @@ void setSequence(void){
   while (!selectNote1){
     step1 = mapOctave();
     syncPhaseInc = mapOctave();
-    delay(1000);
+    delay(500);
     syncPhaseInc = 0;
     selectNote1 = true;
   }
   while (!selectNote2){
     step2 = mapOctave();
     syncPhaseInc = mapOctave();
-    delay(1000);
+    delay(500);
     syncPhaseInc = 0;
     selectNote2 = true;
   }
   while (!selectNote3){
     step3 = mapOctave();
     syncPhaseInc = mapOctave();
-    delay(1000);
+    delay(500);
     syncPhaseInc = 0;
     selectNote3 = true;
   }
   while (!selectNote4){
     step4 = mapOctave();
     syncPhaseInc = mapOctave();
-    delay(1000);
+    delay(500);
     syncPhaseInc = 0;
     selectNote4 = true;
-  }
-  while (!selectNote5){
-    step5 = mapOctave();
-    syncPhaseInc = mapOctave();
-    delay(1000);
-    syncPhaseInc = 0;
-    selectNote5 = true;
-  }
-  while (!selectNote6){
-    step6 = mapOctave();
-    syncPhaseInc = mapOctave();
-    delay(1000);
-    syncPhaseInc = 0;
-    selectNote6 = true;
-  }
-  while (!selectNote7){
-    step7 = mapOctave();
-    syncPhaseInc = mapOctave();
-    delay(1000);
-    syncPhaseInc = 0;
-    selectNote7 = true;
-  }
-  while (!selectNote8){
-    step8 = mapOctave();
-    syncPhaseInc = mapOctave();
-    delay(1000);
-    syncPhaseInc = 0;
-    selectNote8 = true;
   }
 }
 
@@ -393,49 +341,57 @@ void setup() {
  
  }
 
+void noteDuty(void){
+  if (counter > analogRead(DUTY_CYCLE_CONTROL)/1.05){
+    
+  }
+}
+
+void counterMilli(uint16_t counts){
+  for (i = 0; i < counts; i++){
+    delay(1);
+  }
+}
+
 void loop() {
-  
-  tempo = map(analogRead(TEMPO_CONTROL), 0, 1023, 10, 1200);
-  counter++;
-  if (counter > tempo) {
-    counter = 0;
-    if (pattern == 8) {
-      pattern = 0;
-      }
-      grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL))/2;
-      grainDecay     =  analogRead(GRAIN_DECAY_CONTROL)/8;
  
- switch (pattern) {
-  
-  case 0:
-  syncPhaseInc = step1;
-  break;
-  case 1:
-  syncPhaseInc = step2;
-  break;
-  case 2:
-  syncPhaseInc = step3;
-  break;
-  case 3:
-  syncPhaseInc = step4;
-  break;
-  case 4:
-  syncPhaseInc = step5;
-  break;
-  case 5:
-  syncPhaseInc = step6;
-  break;
-  case 6:
-  syncPhaseInc = step7;
-  break;
-  case 7:
-  syncPhaseInc = step8;
-  break;
- }
- delay(tempo);
- pattern++;
- }
- }
+  grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL))/2;
+  grainDecay     =  analogRead(GRAIN_DECAY_CONTROL)/8;
+
+  if (counter < analogRead(TEMPO_CONTROL)){
+    if (counter < analogRead(DUTY_CYCLE_CONTROL)){
+    syncPhaseInc = step1; }
+    else {
+    syncPhaseInc = 0;
+    }
+  }
+  else if (counter < analogRead(TEMPO_CONTROL)*2){
+    if (counter < (analogRead(TEMPO_CONTROL)+analogRead(DUTY_CYCLE_CONTROL))){
+    syncPhaseInc = step2; }
+    else {
+    syncPhaseInc = 0;
+    }
+  }
+  else if (counter < analogRead(TEMPO_CONTROL)*3){
+    if (counter < (2*analogRead(TEMPO_CONTROL)+analogRead(DUTY_CYCLE_CONTROL))){
+    syncPhaseInc = step3; }
+    else {
+    syncPhaseInc = 0; 
+    }
+  }
+  else if (counter < analogRead(TEMPO_CONTROL)*4){
+    if (counter < (3*analogRead(TEMPO_CONTROL)+analogRead(DUTY_CYCLE_CONTROL))){
+    syncPhaseInc = step4; }
+    else {
+    syncPhaseInc = 0; 
+    }
+  }
+  else { counter = 0; }
+
+  counter++;
+  delay(1);
+}
+    
 
 SIGNAL(PWM_INTERRUPT)
 {
