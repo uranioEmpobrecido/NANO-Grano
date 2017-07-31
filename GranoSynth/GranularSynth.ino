@@ -16,11 +16,11 @@ uint16_t grainAmp;
 uint8_t grainDecay;
 
 // Map Analogue channels
-#define GRAIN_FREQ_CONTROL   A0
-#define GRAIN_DECAY_CONTROL  A1
+#define GRAIN_FREQ_CONTROL   A1
+#define GRAIN_DECAY_CONTROL  A0
 #define OCTAVE_CONTROL       A2
-#define ATTACK_CONTROL       A3
-#define RELEASE_CONTROL      A4
+#define ATTACK_CONTROL       A4
+#define RELEASE_CONTROL      A3
 
 //VCA Control
 #define VCA_CONTROL          A5
@@ -30,22 +30,22 @@ uint8_t grainDecay;
 #define PORT_D  1
 
 //Capacitive Threshold
-#define Threshold 6
+#define Threshold 5
 
 // Map Digital channels
-#define C         13  //PB5 - OK
-#define Csharp    12  //PB4 - OK
-#define D         11  //PB3 - OK 
-#define Dsharp    10  //PB2 - OK 
-#define E         9   //PB1 - OK
-#define F         8   //PB0 - OK
-#define Fsharp    7   //PD7 - OK 
-#define G         6   //PD6 - OK
-#define Gsharp    5   //PD5 - OK
-#define A         4   //PD4 - OK 
-#define Asharp    2   //PD2 - OK
-#define B         1   //PD1 - OK 
-#define Cupper    0   //PD0 - OK
+#define C         0 
+#define Csharp    1 
+#define D         2 
+#define Dsharp    4  
+#define E         5   
+#define F         6 
+#define Fsharp    7  
+#define G         13  
+#define Gsharp    12  
+#define A         11   
+#define Asharp    10   
+#define B         9  
+#define Cupper    8  
 
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
@@ -387,7 +387,7 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
