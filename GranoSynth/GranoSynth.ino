@@ -1,3 +1,12 @@
+// GRANO, the granular synthesiser
+//
+// All in the spirit of open-source and open-hardware
+// by Jorge Gutiérrez
+//
+// NANO.es
+//
+// 2017 Spain
+//
 // Analog in 0: Grain Frecuency Control
 // Analog in 1: Octave Selector
 // Analog in 2: Grain Decay Control
@@ -16,36 +25,37 @@ uint16_t grainAmp;
 uint8_t grainDecay;
 
 // Map Analogue channels
-#define GRAIN_FREQ_CONTROL   A0
-#define GRAIN_DECAY_CONTROL  A1
+#define GRAIN_FREQ_CONTROL   A1
+#define GRAIN_DECAY_CONTROL  A0
 #define OCTAVE_CONTROL       A2
-#define ATTACK_CONTROL       A3
-#define RELEASE_CONTROL      A4
+#define ATTACK_CONTROL       A4
+#define RELEASE_CONTROL      A3
 
 //VCA Control
 #define VCA_CONTROL          A5
+#define VCA_MAX_AMPLITUDE    27
 
 //MASK
 #define PORT_B  0
 #define PORT_D  1
 
 //Capacitive Threshold
-#define Threshold 6
+#define Threshold 5
 
 // Map Digital channels
-#define C         13  //PB5 - OK
-#define Csharp    12  //PB4 - OK
-#define D         11  //PB3 - OK 
-#define Dsharp    10  //PB2 - OK 
-#define E         9   //PB1 - OK
-#define F         8   //PB0 - OK
-#define Fsharp    7   //PD7 - OK 
-#define G         6   //PD6 - OK
-#define Gsharp    5   //PD5 - OK
-#define A         4   //PD4 - OK 
-#define Asharp    2   //PD2 - OK
-#define B         1   //PD1 - OK 
-#define Cupper    0   //PD0 - OK
+#define C         0 
+#define Csharp    1 
+#define D         2 
+#define Dsharp    4  
+#define E         5   
+#define F         6 
+#define Fsharp    7  
+#define G         13  
+#define Gsharp    12  
+#define A         11   
+#define Asharp    10   
+#define B         9  
+#define Cupper    8  
 
 #define PWM_PIN       3
 #define PWM_VALUE     OCR2B
@@ -197,71 +207,42 @@ void setHigh(int pin){
 void pulseLow(void){
 
     setLow(VCA_CONTROL);
-    delayMicroseconds(500);
+    delayMicroseconds(350);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(500); //Fixed OK
+    delayMicroseconds(350); //Fixed OK
 }
 
 void pulseHigh(void){
 
     setHigh(VCA_CONTROL);
-    delayMicroseconds(500);
+    delayMicroseconds(350);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(500); //Fixed OK
+    delayMicroseconds(350); //Fixed OK
 }
 
 void attackProcess(void){
-
-  if (analogRead(ATTACK_CONTROL)>125){
-    noAttack = false;
-    if (32 > attackCount && pulseCount < 32){ 
+  
+    if (VCA_MAX_AMPLITUDE > attackCount && pulseCount < VCA_MAX_AMPLITUDE){ 
       attackCount++;
       pulseCount++;
       pulseHigh();
       }
-      delay((analogRead(ATTACK_CONTROL)-125)/25);
-      } else { 
-        noAttack = true;
-        if (32 > attackCount && pulseCount < 32){ 
-          attackCount++;
-          pulseCount++;
-          pulseHigh();
-          }
-      }
-  releaseCount = 0;
-  releaseNote = true;
-  attackNote = false;
+      delay((analogRead(ATTACK_CONTROL))/25);
+      releaseCount = 0;
 }
 
 void releaseProcess(void){
   
   uint8_t i = 0;
-  if (attackCount >= 31){ i = 32;}
-  else i = attackCount;
-  if (analogRead(RELEASE_CONTROL)>125){
-    noRelease = false;
-    while (releaseCount < i && releaseNote){ 
-      while (releaseCount < i){
+  if (attackCount >= VCA_MAX_AMPLITUDE){ i = VCA_MAX_AMPLITUDE;}
+  else { i = attackCount; }
+  while (releaseCount < i){ 
     pulseLow();
     releaseCount++;
-    delay((analogRead(RELEASE_CONTROL)-125)/25);
+    delay((analogRead(RELEASE_CONTROL))/25);
     }
-    dbAdjust = false;
-  }
- } else { 
-    noRelease = false;
-    while (releaseCount < i && releaseNote){ 
-      while (releaseCount < i){
-        pulseLow();
-        releaseCount++;
-        }
-    }
-    dbAdjust = false;
-  noRelease = true;
-  }
   pulseCount = 0;
   attackCount = 0;
-  attackNote = true;
 }
 
 uint16_t mapOctave() {
@@ -387,7 +368,7 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
@@ -430,3 +411,4 @@ SIGNAL(PWM_INTERRUPT)
   // Output to PWM (this is faster than using analogWrite)
   PWM_VALUE = output;
 }
+
