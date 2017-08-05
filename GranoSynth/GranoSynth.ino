@@ -10,9 +10,9 @@
 // Analog in 0: Grain Frecuency Control
 // Analog in 1: Octave Selector
 // Analog in 2: Grain Decay Control
-// Analog in 3: Attack Control (Not implemented)
-// Analog in 4: Decay Control (Not implemented)
-// Analog in 5: Tri-State Volume Control (Not implemented)
+// Analog in 3: Effect Control 
+// Analog in 4: Effect Selector
+// Analog in 5: Tri-State Volume Contro
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -33,7 +33,14 @@ uint8_t grainDecay;
 
 //VCA Control
 #define VCA_CONTROL          A5
-#define VCA_MAX_AMPLITUDE    27
+#define VCA_NORMAL_AMPLITUDE  0
+#define VCA_MAX_AMPLITUDE    10
+
+//Fixed DECAY value
+#define DECAY          48
+
+//Fixed FREQ value
+#define FREQ           255
 
 //MASK
 #define PORT_B  0
@@ -61,20 +68,19 @@ uint8_t grainDecay;
 #define PWM_VALUE     OCR2B
 #define PWM_INTERRUPT TIMER2_OVF_vect
 
-uint16_t freqMap, octaveMap;
+uint16_t freqMap, octaveMap, arpeggioNote;
 
 uint16_t input, inputOct;
 
-uint8_t note;
+uint8_t note, arpeggioState, arpeggioOctave, volume;
+
+bool tremoloON = false;
 
 bool attackNote = false;
 bool releaseNote = false;
 
 bool noAttack = false;
 bool noRelease = false;
-
-bool dbAdjust = false;
-bool dbLowAdj = true;
 
 uint8_t attackCount, releaseCount, pulseCount;
 
@@ -87,7 +93,7 @@ uint16_t antilogTable[64] = {
   38548,38133,37722,37316,36914,36516,36123,35734,35349,34968,34591,34219,33850,33486,33125,32768
 };
 uint16_t mapPhaseInc(uint16_t input) {
-  if (analogRead(GRAIN_DECAY_CONTROL) > 75){
+  if (analogRead(GRAIN_DECAY_CONTROL) > 45){
     if (((antilogTable[input & 0x3f]) >> (input >> 6)) < 5000){
       return (5000);
       }
@@ -164,25 +170,33 @@ uint8_t readCapacitivePin(int pinToMeasure) {
   return cycles;
 }
 
-// Vibiss mapping OCTAVE 2
+//OCTAVE 2
 //
 uint16_t Octave2Table[13] = {65,69,73,78,82,87,93,98,104,110,117,123,131};
 
-// Vibiss mapping OCTAVE 3
+//OCTAVE 3
 //
 uint16_t Octave3Table[13] = {131,139,147,156,165,175,185,196,208,220,233,247,262};
 
-// Vibiss mapping OCTAVE 4
+//OCTAVE 4
 //
 uint16_t Octave4Table[13] = {262,277,294,311,330,349,370,392,415,440,466,494,523};
 
-// Vibiss mapping OCTAVE 5
+//OCTAVE 5
 //
 uint16_t Octave5Table[13] = {523,554,587,622,659,698,740,784,831,880,932,988,1047};
 
-// Vibiss mapping OCTAVE 6
+//OCTAVE 6
 //
 uint16_t Octave6Table[13] = {1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093};
+
+//ARPEGGIATOR TABLE
+//
+uint16_t ArpeggioTable[66] = {0,65,69,73,78,82,87,93,98,104,110,117,123,131,                //OCTAVE2
+                              139,147,156,165,175,185,196,208,220,233,247,262,              //OCTAVE3
+                              277,294,311,330,349,370,392,415,440,466,494,523,              //OCTAVE4
+                              554,587,622,659,698,740,784,831,880,932,988,1047,             //OCTAVE5
+                              1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093}; //OCTAVE6
 
 void setLow(int pin){
 
@@ -207,45 +221,101 @@ void setHigh(int pin){
 void pulseLow(void){
 
     setLow(VCA_CONTROL);
-    delayMicroseconds(350);
+    delayMicroseconds(200);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(350); //Fixed OK
+    delayMicroseconds(200); 
+    volume--;
 }
 
 void pulseHigh(void){
 
     setHigh(VCA_CONTROL);
-    delayMicroseconds(350);
+    delayMicroseconds(200);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(350); //Fixed OK
+    delayMicroseconds(200);
+    volume++;
 }
 
 void attackProcess(void){
-  
+  if (volume <= VCA_MAX_AMPLITUDE){
     if (VCA_MAX_AMPLITUDE > attackCount && pulseCount < VCA_MAX_AMPLITUDE){ 
       attackCount++;
       pulseCount++;
       pulseHigh();
       }
-      delay((analogRead(ATTACK_CONTROL))/25);
-      releaseCount = 0;
-}
+  delay((analogRead(ATTACK_CONTROL)+25)/25);
+  releaseCount = 0;
+  }
+} 
 
 void releaseProcess(void){
-  
-  uint8_t i = 0;
-  if (attackCount >= VCA_MAX_AMPLITUDE){ i = VCA_MAX_AMPLITUDE;}
-  else { i = attackCount; }
-  while (releaseCount < i){ 
+  if (volume >= 0){
+    uint8_t i = 0;
+    if (attackCount >= VCA_MAX_AMPLITUDE){ i = VCA_MAX_AMPLITUDE;}
+    else { i = attackCount; }
+    while (releaseCount < i){ 
     pulseLow();
     releaseCount++;
-    delay((analogRead(RELEASE_CONTROL))/25);
+    delay((analogRead(RELEASE_CONTROL)+25)/25);
     }
   pulseCount = 0;
   attackCount = 0;
+  }
 }
 
-uint16_t mapOctave() {
+uint16_t mapArpeggio(){
+
+  arpeggioOctave = (1+((analogRead(OCTAVE_CONTROL)*5)/1024));
+  
+  if (readCapacitivePin(C)>Threshold){
+    arpeggioNote = 1;
+  }
+  else if (readCapacitivePin(Csharp)>Threshold){
+    arpeggioNote = 2;
+  }
+  else if (readCapacitivePin(D)>Threshold){
+    arpeggioNote = 3;
+  }
+  else if (readCapacitivePin(Dsharp)>Threshold){
+    arpeggioNote = 4;
+  }
+  else if (readCapacitivePin(E)>Threshold){
+    arpeggioNote = 5;
+  }
+  else if (readCapacitivePin(F)>Threshold){
+    arpeggioNote = 6;
+  }
+  else if (readCapacitivePin(Fsharp)>Threshold){
+    arpeggioNote = 7;
+  }
+  else if (readCapacitivePin(G)>Threshold){
+    arpeggioNote = 8;
+  }
+  else if (readCapacitivePin(Gsharp)>Threshold){
+    arpeggioNote = 9;
+  }
+  else if (readCapacitivePin(A)>Threshold){
+    arpeggioNote = 10;
+  }
+  else if (readCapacitivePin(Asharp)>Threshold){
+    arpeggioNote = 11;
+  }
+  else if (readCapacitivePin(B)>Threshold){
+    arpeggioNote = 12;
+  }
+  else if (readCapacitivePin(Cupper)>Threshold){
+    arpeggioNote = 13;
+  }
+  else return 0;
+  
+  if (arpeggioOctave == 1){ return arpeggioNote; }
+  else if (arpeggioOctave == 2){ return arpeggioNote+13; }
+  else if (arpeggioOctave == 3){ return arpeggioNote+26; }
+  else if (arpeggioOctave == 4){ return arpeggioNote+39; }
+  else if (arpeggioOctave == 5){ return arpeggioNote+52; }
+}
+
+uint16_t mapOctave(void) {
   if (readCapacitivePin(C)>Threshold){
     attackProcess();
     return selectOctave(12);
@@ -306,13 +376,7 @@ uint16_t mapOctave() {
 uint16_t selectOctave(uint8_t note){
 
   octaveMap = (analogRead(OCTAVE_CONTROL)*5)/1024;
-  /*
-  Serial.print("  Note:");
-  Serial.print(note);
-  Serial.print("  Octave:");
-  Serial.print(octaveMap);
-  Serial.print("\n");
-  */
+
   if (octaveMap == 0){
      //Serial.print("Freq:");
      //Serial.print(Octave2Table[12-note]);
@@ -323,7 +387,7 @@ uint16_t selectOctave(uint8_t note){
      //Serial.print(Octave3Table[12-note]);
     return Octave3Table[12-note];
   }
-  if (octaveMap== 2){
+  if (octaveMap == 2){
      //Serial.print("Freq:");
      //Serial.print(Octave4Table[12-note]);
     return Octave4Table[12-note];
@@ -371,12 +435,77 @@ void setup() {
   //Serial.begin(9600);
 }
 
-void loop() {
-  
+void granularEffect(void){
+  //GRAIN EFFECT
   syncPhaseInc   =  mapOctave();
-  grainPhaseInc  =  mapPhaseInc(analogRead(GRAIN_FREQ_CONTROL)) / 2;
-  grainDecay     =  analogRead(GRAIN_DECAY_CONTROL) / 8;
+  grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/1.7;  
+  grainDecay     =  DECAY; 
+}
+
+void tremoloEffect(void){
+  //TREMOLO EFFECT
+  if (!tremoloON){
+    syncPhaseInc   =  mapOctave();
+    grainPhaseInc  =  mapPhaseInc(FREQ);
+    grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
+    delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+    tremoloON = true;
+  } else {
+    syncPhaseInc   =  0;
+    grainPhaseInc  =  mapPhaseInc(FREQ);
+    grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
+    delay(analogRead(GRAIN_FREQ_CONTROL)/3);
+    tremoloON = false;
+  }  
+}
+
+void arpeggiatorEffect(void){
+  //ARPEGIATTOR EFFECT
+  if (mapArpeggio() != 0){
+    if (arpeggioState == 0){
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()];
+      grainPhaseInc  =  mapPhaseInc(FREQ);
+      grainDecay     =  DECAY; 
+      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      arpeggioState++;
+      }
+    else if (arpeggioState == 1){
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+4];
+      grainPhaseInc  =  mapPhaseInc(FREQ);
+      grainDecay     =  DECAY; 
+      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      arpeggioState++;
+      }
+    else if (arpeggioState == 2){
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+8];
+      grainPhaseInc  =  mapPhaseInc(FREQ);
+      grainDecay     =  DECAY; 
+      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      arpeggioState++;
+      }
+    else if (arpeggioState == 3){
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+10];
+      grainPhaseInc  =  mapPhaseInc(FREQ);
+      grainDecay     =  DECAY; 
+      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      arpeggioState = 0;
+      }
+  }
+  else syncPhaseInc   =  0;
   
+}
+
+void loop() {
+
+  if (analogRead(GRAIN_DECAY_CONTROL) < 333){
+    granularEffect();
+  }
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 666){
+    tremoloEffect();
+  }
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 1024){
+    arpeggiatorEffect();
+  } 
 }
 
 
