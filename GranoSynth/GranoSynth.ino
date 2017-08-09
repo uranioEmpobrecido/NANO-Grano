@@ -37,34 +37,36 @@ uint8_t grainDecay;
 #define VCA_MAX_AMPLITUDE    10
 
 //Fixed DECAY value
-#define DECAY          48
+#define DECAY                48
+//Fixed DECAY effect value
+#define DECAY_EFF             1
 
 //Fixed FREQ value
-#define FREQ           255
+#define FREQ                255
 
 //MASK
-#define PORT_B  0
-#define PORT_D  1
+#define PORT_B                0
+#define PORT_D                1
 
 //Capacitive Threshold
-#define Threshold 5
+#define Threshold             5
 
 // Map Digital channels
-#define C         0 
-#define Csharp    1 
-#define D         2 
-#define Dsharp    4  
-#define E         5   
-#define F         6 
-#define Fsharp    7  
-#define G         13  
-#define Gsharp    12  
-#define A         11   
-#define Asharp    10   
-#define B         9  
-#define Cupper    8  
+#define C                     0 
+#define Csharp                1 
+#define D                     2 
+#define Dsharp                4  
+#define E                     5   
+#define F                     6 
+#define Fsharp                7  
+#define G                    13  
+#define Gsharp               12  
+#define A                    11   
+#define Asharp               10   
+#define B                     9  
+#define Cupper                8  
 
-#define PWM_PIN       3
+#define PWM_PIN               3
 #define PWM_VALUE     OCR2B
 #define PWM_INTERRUPT TIMER2_OVF_vect
 
@@ -93,7 +95,8 @@ uint16_t antilogTable[64] = {
   38548,38133,37722,37316,36914,36516,36123,35734,35349,34968,34591,34219,33850,33486,33125,32768
 };
 uint16_t mapPhaseInc(uint16_t input) {
-  if (analogRead(GRAIN_DECAY_CONTROL) > 45){
+  
+  if (input > 512){ 
     if (((antilogTable[input & 0x3f]) >> (input >> 6)) < 5000){
       return (5000);
       }
@@ -112,7 +115,7 @@ uint8_t readCapacitivePin(int pinToMeasure) {
   volatile uint8_t* port;
   volatile uint8_t* ddr;
   volatile uint8_t* pin;
-  // Here we translate the input pin number from
+  //  Here we translate the input pin number from
   //  Arduino pin number to the AVR PORT, PIN, DDR,
   //  and which bit of those registers we care about.
   byte bitmask;
@@ -137,7 +140,7 @@ uint8_t readCapacitivePin(int pinToMeasure) {
 
   uint8_t cycles = 17;
 
-  if (*pin & bitmask) { cycles =  0;}
+  if      (*pin & bitmask) { cycles =  0;}
   else if (*pin & bitmask) { cycles =  1;}
   else if (*pin & bitmask) { cycles =  2;}
   else if (*pin & bitmask) { cycles =  3;}
@@ -155,16 +158,18 @@ uint8_t readCapacitivePin(int pinToMeasure) {
   else if (*pin & bitmask) { cycles = 15;}
   else if (*pin & bitmask) { cycles = 16;}
 
-  // End of timing-critical section; turn interrupts back on if they were on before, or leave them off if they were off before
+  //  End of timing-critical section; turn interrupts back on if they were on before,
+  //  or leave them off if they were off before
 
   SREG = SREG_old;
   
-  // Discharge the pin again by setting it low and output
+  //  Discharge the pin again by setting it low and output
   //  It's important to leave the pins low if you want to 
   //  be able to touch more than 1 sensor at a time - if
   //  the sensor is left pulled high, when you touch
   //  two sensors, your body will transfer the charge between
   //  sensors.
+  
   *port &= ~(bitmask);
   *ddr  |= bitmask;
   return cycles;
@@ -192,10 +197,14 @@ uint16_t Octave6Table[13] = {1047,1109,1175,1245,1319,1397,1480,1568,1661,1760,1
 
 //ARPEGGIATOR TABLE
 //
-uint16_t ArpeggioTable[66] = {0,65,69,73,78,82,87,93,98,104,110,117,123,131,                //OCTAVE2
+uint16_t ArpeggioTable[65] = {65,69,73,78,82,87,93,98,104,110,117,123,131,                  //OCTAVE2
+
                               139,147,156,165,175,185,196,208,220,233,247,262,              //OCTAVE3
+                              
                               277,294,311,330,349,370,392,415,440,466,494,523,              //OCTAVE4
+                              
                               554,587,622,659,698,740,784,831,880,932,988,1047,             //OCTAVE5
+                              
                               1109,1175,1245,1319,1397,1480,1568,1661,1760,1865,1976,2093}; //OCTAVE6
 
 void setLow(int pin){
@@ -237,7 +246,8 @@ void pulseHigh(void){
 }
 
 void attackProcess(void){
-  if (volume <= VCA_MAX_AMPLITUDE){
+  
+  if (volume < VCA_MAX_AMPLITUDE){
     if (VCA_MAX_AMPLITUDE > attackCount && pulseCount < VCA_MAX_AMPLITUDE){ 
       attackCount++;
       pulseCount++;
@@ -249,6 +259,7 @@ void attackProcess(void){
 } 
 
 void releaseProcess(void){
+  
   if (volume >= 0){
     uint8_t i = 0;
     if (attackCount >= VCA_MAX_AMPLITUDE){ i = VCA_MAX_AMPLITUDE;}
@@ -308,7 +319,7 @@ uint16_t mapArpeggio(){
   }
   else return 0;
   
-  if (arpeggioOctave == 1){ return arpeggioNote; }
+  if      (arpeggioOctave == 1){ return arpeggioNote;    }
   else if (arpeggioOctave == 2){ return arpeggioNote+13; }
   else if (arpeggioOctave == 3){ return arpeggioNote+26; }
   else if (arpeggioOctave == 4){ return arpeggioNote+39; }
@@ -316,6 +327,7 @@ uint16_t mapArpeggio(){
 }
 
 uint16_t mapOctave(void) {
+  
   if (readCapacitivePin(C)>Threshold){
     attackProcess();
     return selectOctave(12);
@@ -378,28 +390,18 @@ uint16_t selectOctave(uint8_t note){
   octaveMap = (analogRead(OCTAVE_CONTROL)*5)/1024;
 
   if (octaveMap == 0){
-     //Serial.print("Freq:");
-     //Serial.print(Octave2Table[12-note]);
     return Octave2Table[12-note];
   }
   if (octaveMap == 1){
-     //Serial.print("Freq:");
-     //Serial.print(Octave3Table[12-note]);
     return Octave3Table[12-note];
   }
   if (octaveMap == 2){
-     //Serial.print("Freq:");
-     //Serial.print(Octave4Table[12-note]);
     return Octave4Table[12-note];
   }
   if (octaveMap == 3){
-     //Serial.print("Freq:");
-     //Serial.print(Octave5Table[12-note]);
     return Octave5Table[12-note];
   }
   if (octaveMap == 4){
-     //Serial.print("Freq:");
-     //Serial.print(Octave6Table[12-note]);
     return Octave6Table[12-note];
   }
 
@@ -438,8 +440,13 @@ void setup() {
 void granularEffect(void){
   //GRAIN EFFECT
   syncPhaseInc   =  mapOctave();
-  grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/1.7;  
-  grainDecay     =  DECAY; 
+  grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/2;  
+  if (analogRead(FREQ) < 512){
+    grainDecay   =  DECAY_EFF;  
+  }
+  else {
+    grainDecay   =  DECAY;
+  }
 }
 
 void tremoloEffect(void){
@@ -448,13 +455,13 @@ void tremoloEffect(void){
     syncPhaseInc   =  mapOctave();
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+    delay(analogRead(GRAIN_FREQ_CONTROL)/4);
     tremoloON = true;
   } else {
     syncPhaseInc   =  0;
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(GRAIN_FREQ_CONTROL)/3);
+    delay(analogRead(GRAIN_FREQ_CONTROL)/8);
     tremoloON = false;
   }  
 }
@@ -470,14 +477,14 @@ void arpeggiatorEffect(void){
       arpeggioState++;
       }
     else if (arpeggioState == 1){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+4];
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+5];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
       delay(analogRead(GRAIN_FREQ_CONTROL)/2);
       arpeggioState++;
       }
     else if (arpeggioState == 2){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+8];
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+7];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
       delay(analogRead(GRAIN_FREQ_CONTROL)/2);
@@ -488,26 +495,25 @@ void arpeggiatorEffect(void){
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
       delay(analogRead(GRAIN_FREQ_CONTROL)/2);
-      arpeggioState = 0;
+      arpeggioState  =  0;
       }
   }
-  else syncPhaseInc   =  0;
-  
+  else syncPhaseInc  =  0;
+    
 }
 
 void loop() {
 
-  if (analogRead(GRAIN_DECAY_CONTROL) < 333){
+  if (analogRead(GRAIN_DECAY_CONTROL) < 340){
     granularEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 666){
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 680){
     tremoloEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 1024){
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 1030){
     arpeggiatorEffect();
   } 
 }
-
 
 SIGNAL(PWM_INTERRUPT)
 {
