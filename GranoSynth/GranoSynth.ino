@@ -34,7 +34,7 @@ uint8_t grainDecay;
 //VCA Control
 #define VCA_CONTROL          A5
 #define VCA_NORMAL_AMPLITUDE  0
-#define VCA_MAX_AMPLITUDE    10
+#define VCA_MAX_AMPLITUDE    20
 
 //Fixed DECAY value
 #define DECAY                48
@@ -74,15 +74,10 @@ uint16_t freqMap, octaveMap, arpeggioNote;
 
 uint16_t input, inputOct;
 
-uint8_t note, arpeggioState, arpeggioOctave, volume;
+uint8_t note, releasePulse, arpeggioState, arpeggioOctave, volume;
 
 bool tremoloON = false;
-
-bool attackNote = false;
-bool releaseNote = false;
-
-bool noAttack = false;
-bool noRelease = false;
+bool volumeAdjust = false;
 
 uint8_t attackCount, releaseCount, pulseCount;
 
@@ -230,49 +225,38 @@ void setHigh(int pin){
 void pulseLow(void){
 
     setLow(VCA_CONTROL);
-    delayMicroseconds(200);
+    delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(200); 
+    //delayMicroseconds(500); 
     volume--;
 }
 
 void pulseHigh(void){
 
     setHigh(VCA_CONTROL);
-    delayMicroseconds(200);
+    delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    delayMicroseconds(200);
+    //delayMicroseconds(500);
     volume++;
 }
 
+
 void attackProcess(void){
-  
-  if (volume < VCA_MAX_AMPLITUDE){
-    if (VCA_MAX_AMPLITUDE > attackCount && pulseCount < VCA_MAX_AMPLITUDE){ 
-      attackCount++;
-      pulseCount++;
-      pulseHigh();
-      }
-  delay((analogRead(ATTACK_CONTROL)+25)/25);
-  releaseCount = 0;
-  }
-} 
+
+    if (VCA_MAX_AMPLITUDE > volume){ 
+    pulseHigh();
+    delay((analogRead(ATTACK_CONTROL)+30)/30);
+    }
+}
 
 void releaseProcess(void){
-  
-  if (volume >= 0){
-    uint8_t i = 0;
-    if (attackCount >= VCA_MAX_AMPLITUDE){ i = VCA_MAX_AMPLITUDE;}
-    else { i = attackCount; }
-    while (releaseCount < i){ 
+
+    while (volume > VCA_NORMAL_AMPLITUDE){
     pulseLow();
-    releaseCount++;
-    delay((analogRead(RELEASE_CONTROL)+25)/25);
+    delay((analogRead(RELEASE_CONTROL)+30)/30);
     }
-  pulseCount = 0;
-  attackCount = 0;
-  }
 }
+
 
 uint16_t mapArpeggio(){
 
@@ -326,62 +310,107 @@ uint16_t mapArpeggio(){
   else if (arpeggioOctave == 5){ return arpeggioNote+52; }
 }
 
-uint16_t mapOctave(void) {
-  
-  if (readCapacitivePin(C)>Threshold){
+uint16_t mapOctave(bool Envelope) {
+
+  if (Envelope){
+    if (readCapacitivePin(C)>Threshold){
     attackProcess();
     return selectOctave(12);
-  }
-  else if (readCapacitivePin(Csharp)>Threshold){
+    }
+    else if (readCapacitivePin(Csharp)>Threshold){
     attackProcess();
     return selectOctave(11);
-  }
-  else if (readCapacitivePin(D)>Threshold){
+    }
+    else if (readCapacitivePin(D)>Threshold){
     attackProcess();
     return selectOctave(10);
-  }
-  else if (readCapacitivePin(Dsharp)>Threshold){
+    }
+    else if (readCapacitivePin(Dsharp)>Threshold){
     attackProcess();
     return selectOctave(9);
-  }
-  else if (readCapacitivePin(E)>Threshold){
+    }
+    else if (readCapacitivePin(E)>Threshold){
     attackProcess();
     return selectOctave(8);
-  }
-  else if (readCapacitivePin(F)>Threshold){
+    }
+    else if (readCapacitivePin(F)>Threshold){
     attackProcess();
     return selectOctave(7);
-  }
-  else if (readCapacitivePin(Fsharp)>Threshold){
+    }
+    else if (readCapacitivePin(Fsharp)>Threshold){
     attackProcess();
     return selectOctave(6);
-  }
-  else if (readCapacitivePin(G)>Threshold){
+    }
+    else if (readCapacitivePin(G)>Threshold){
     attackProcess();
     return selectOctave(5);
-  }
-  else if (readCapacitivePin(Gsharp)>Threshold){
+    }
+    else if (readCapacitivePin(Gsharp)>Threshold){
     attackProcess();
     return selectOctave(4);
-  }
-  else if (readCapacitivePin(A)>Threshold){
+    }
+    else if (readCapacitivePin(A)>Threshold){
     attackProcess();
     return selectOctave(3);
-  }
-  else if (readCapacitivePin(Asharp)>Threshold){
+    }
+    else if (readCapacitivePin(Asharp)>Threshold){
     attackProcess();
     return selectOctave(2);
-  }
-  else if (readCapacitivePin(B)>Threshold){
+    }
+    else if (readCapacitivePin(B)>Threshold){
     attackProcess();
     return selectOctave(1);
-  }
-  else if (readCapacitivePin(Cupper)>Threshold){
+    }
+    else if (readCapacitivePin(Cupper)>Threshold){
     attackProcess();
     return selectOctave(0);
+    }
+    else releaseProcess();
+    return 0;
+  
+  } else {
+  
+    if (readCapacitivePin(C)>Threshold){
+    return selectOctave(12);
+    }
+    else if (readCapacitivePin(Csharp)>Threshold){
+    return selectOctave(11);
+    }
+    else if (readCapacitivePin(D)>Threshold){
+    return selectOctave(10);
+    }
+    else if (readCapacitivePin(Dsharp)>Threshold){
+    return selectOctave(9);
+    }
+    else if (readCapacitivePin(E)>Threshold){
+    return selectOctave(8);
+    }
+    else if (readCapacitivePin(F)>Threshold){
+    return selectOctave(7);
+    }
+    else if (readCapacitivePin(Fsharp)>Threshold){
+    return selectOctave(6);
+    }
+    else if (readCapacitivePin(G)>Threshold){
+    return selectOctave(5);
+    }
+    else if (readCapacitivePin(Gsharp)>Threshold){
+    return selectOctave(4);
+    }
+    else if (readCapacitivePin(A)>Threshold){
+    return selectOctave(3);
+    }
+    else if (readCapacitivePin(Asharp)>Threshold){
+    return selectOctave(2);
+    }
+    else if (readCapacitivePin(B)>Threshold){
+    return selectOctave(1);
+    }
+    else if (readCapacitivePin(Cupper)>Threshold){
+    return selectOctave(0);
+    }
+    else return 0;    
   }
-  else releaseProcess();
-  return 0;
 }
 
 
@@ -434,12 +463,12 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  //Serial.begin(9600);
+  Serial.begin(9600);
 }
 
 void granularEffect(void){
   //GRAIN EFFECT
-  syncPhaseInc   =  mapOctave();
+  syncPhaseInc   =  mapOctave(1);
   grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/2;  
   if (analogRead(FREQ) < 512){
     grainDecay   =  DECAY_EFF;  
@@ -452,7 +481,7 @@ void granularEffect(void){
 void tremoloEffect(void){
   //TREMOLO EFFECT
   if (!tremoloON){
-    syncPhaseInc   =  mapOctave();
+    syncPhaseInc   =  mapOctave(0);
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
     delay(analogRead(GRAIN_FREQ_CONTROL)/4);
@@ -502,15 +531,42 @@ void arpeggiatorEffect(void){
     
 }
 
+void volumeAdjG(void){
+
+  if (volumeAdjust){
+    while (volume > VCA_NORMAL_AMPLITUDE){
+      pulseLow();
+      delay(1);
+    }
+    volumeAdjust = false;
+  }
+}
+
+
+void volumeAdjTA(void){
+
+  if (!volumeAdjust){
+    while (volume < VCA_MAX_AMPLITUDE){
+      pulseHigh();
+      delay(1);
+      }
+    volumeAdjust = true;
+  }
+}
+
 void loop() {
 
+
   if (analogRead(GRAIN_DECAY_CONTROL) < 340){
+    volumeAdjG();
     granularEffect();
   }
   else if (analogRead(GRAIN_DECAY_CONTROL) < 680){
+    volumeAdjTA();
     tremoloEffect();
   }
   else if (analogRead(GRAIN_DECAY_CONTROL) < 1030){
+    volumeAdjTA();
     arpeggiatorEffect();
   } 
 }
