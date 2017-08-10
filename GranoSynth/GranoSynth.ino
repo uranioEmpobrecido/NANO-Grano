@@ -22,7 +22,7 @@ uint16_t syncPhaseInc;
 uint16_t grainPhaseAcc;
 uint16_t grainPhaseInc;
 uint16_t grainAmp;
-uint8_t grainDecay;
+uint16_t grainDecay;
 
 // Map Analogue channels
 #define GRAIN_FREQ_CONTROL   A1
@@ -37,7 +37,7 @@ uint8_t grainDecay;
 #define VCA_MAX_AMPLITUDE    20
 
 //Fixed DECAY value
-#define DECAY                48
+#define DECAY                64  //48
 //Fixed DECAY effect value
 #define DECAY_EFF             1
 
@@ -47,6 +47,10 @@ uint8_t grainDecay;
 //MASK
 #define PORT_B                0
 #define PORT_D                1
+
+//Envelope Selector
+#define ENVELOPE              1
+#define NO_ENVELOPE           0
 
 //Capacitive Threshold
 #define Threshold             5
@@ -477,28 +481,22 @@ void GPIOSetup(void){
   
 }
 
-void setup() {
-  
-  GPIOSetup();
-  audioOn();
-}
-
 void granularEffect(void){
   //GRAIN EFFECT
-  syncPhaseInc   =  mapOctave(1);
+  syncPhaseInc   =  mapOctave(ENVELOPE);
   grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/2;  
   if (analogRead(FREQ) < 512){
     grainDecay   =  DECAY_EFF;  
   }
   else {
-    grainDecay   =  DECAY;
+    grainDecay   = ((analogRead(GRAIN_FREQ_CONTROL)-512)/2);
   }
 }
 
 void tremoloEffect(void){
   //TREMOLO EFFECT
   if (!tremoloON){
-    syncPhaseInc   =  mapOctave(0);
+    syncPhaseInc   =  mapOctave(NO_ENVELOPE);
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
     delay(analogRead(GRAIN_FREQ_CONTROL)/4);
@@ -550,6 +548,7 @@ void arpeggiatorEffect(void){
 
 void volumeAdjG(void){
 
+  noEnvelopeAdj();
   if (volumeAdjust){
     while (volume > VCA_NORMAL_AMPLITUDE){
       pulseLow();
@@ -569,23 +568,6 @@ void volumeAdjTA(void){
       }
     volumeAdjust = true;
   }
-}
-
-void loop() {
-
-  if (analogRead(GRAIN_DECAY_CONTROL) < 340){
-    volumeAdjG();
-    noEnvelopeAdj();
-    granularEffect();
-  }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 680){
-    volumeAdjTA();
-    tremoloEffect();
-  }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 1030){
-    volumeAdjTA();
-    arpeggiatorEffect();
-  } 
 }
 
 SIGNAL(PWM_INTERRUPT)
@@ -618,4 +600,28 @@ SIGNAL(PWM_INTERRUPT)
 
   // Output to PWM (this is faster than using analogWrite)
   PWM_VALUE = output;
+}
+
+void setup() {
+  
+  GPIOSetup();
+  audioOn();
+  //Serial.begin(9600);
+}
+
+
+void loop() {
+
+  if (analogRead(GRAIN_DECAY_CONTROL) < 340){
+    volumeAdjG();
+    granularEffect();
+  }
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 680){
+    volumeAdjTA();
+    tremoloEffect();
+  }
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 1030){
+    volumeAdjTA();
+    arpeggiatorEffect();
+  } 
 }
