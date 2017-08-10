@@ -227,7 +227,7 @@ void pulseLow(void){
     setLow(VCA_CONTROL);
     delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    //delayMicroseconds(500); 
+    delayMicroseconds(500); 
     volume--;
 }
 
@@ -236,25 +236,39 @@ void pulseHigh(void){
     setHigh(VCA_CONTROL);
     delayMicroseconds(500);
     setHighZ(VCA_CONTROL);
-    //delayMicroseconds(500);
+    delayMicroseconds(500);
     volume++;
 }
 
+void noEnvelopeAdj(void){
+  
+  if ((analogRead(ATTACK_CONTROL)<25)&&(analogRead(RELEASE_CONTROL)<25)){
+    if (volume < VCA_MAX_AMPLITUDE){
+      pulseHigh();
+      delay(1);      
+    }
+  }
+  
+}
 
 void attackProcess(void){
 
+  if ((analogRead(ATTACK_CONTROL)>25)||(analogRead(RELEASE_CONTROL)>25)){
     if (VCA_MAX_AMPLITUDE > volume){ 
     pulseHigh();
-    delay((analogRead(ATTACK_CONTROL)+30)/30);
+    delay((analogRead(ATTACK_CONTROL)+25)/25);
     }
+  }
 }
 
 void releaseProcess(void){
-
+  
+  if ((analogRead(ATTACK_CONTROL)>25)||(analogRead(RELEASE_CONTROL)>25)){
     while (volume > VCA_NORMAL_AMPLITUDE){
     pulseLow();
-    delay((analogRead(RELEASE_CONTROL)+30)/30);
+    delay((analogRead(RELEASE_CONTROL)+25)/25);
     }
+  }
 }
 
 
@@ -443,11 +457,9 @@ void audioOn() {
   TIMSK2 = _BV(TOIE2);
 }
 
-void setup() {
-
-  pinMode(PWM_PIN,OUTPUT);
+void GPIOSetup(void){
   
-  audioOn();
+  pinMode(PWM_PIN,OUTPUT);
   
   pinMode(C,INPUT_PULLUP);
   pinMode(Csharp,INPUT_PULLUP);
@@ -463,7 +475,12 @@ void setup() {
   pinMode(B,INPUT_PULLUP);
   pinMode(Cupper,INPUT_PULLUP);
   
-  Serial.begin(9600);
+}
+
+void setup() {
+  
+  GPIOSetup();
+  audioOn();
 }
 
 void granularEffect(void){
@@ -556,9 +573,9 @@ void volumeAdjTA(void){
 
 void loop() {
 
-
   if (analogRead(GRAIN_DECAY_CONTROL) < 340){
     volumeAdjG();
+    noEnvelopeAdj();
     granularEffect();
   }
   else if (analogRead(GRAIN_DECAY_CONTROL) < 680){
@@ -602,4 +619,3 @@ SIGNAL(PWM_INTERRUPT)
   // Output to PWM (this is faster than using analogWrite)
   PWM_VALUE = output;
 }
-
