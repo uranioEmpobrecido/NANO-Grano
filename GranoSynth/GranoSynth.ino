@@ -31,6 +31,9 @@ uint16_t grainDecay;
 #define ATTACK_CONTROL       A4
 #define RELEASE_CONTROL      A3
 
+#define TEMPO_CONTROL        A3
+#define DUTY_CYCLE_CONTROL   A4
+
 //VCA Control
 #define VCA_CONTROL          A5
 #define VCA_NORMAL_AMPLITUDE  0
@@ -78,11 +81,34 @@ uint16_t grainDecay;
 
 uint16_t freqMap, octaveMap, arpeggioNote;
 
+uint16_t step1, step2, step3, step4, step5, step6, step7, step8;
+
+bool selectNote1 = false;
+bool selectNote2 = false;
+bool selectNote3 = false;
+bool selectNote4 = false;
+bool selectNote5 = false;
+bool selectNote6 = false;
+bool selectNote7 = false;
+bool selectNote8 = false;
+
+uint8_t pattern = 0;
+
+bool setSeq = false;
+bool state = false;
+bool prevState = false;
+bool seqPlay = true;
+
+uint16_t i;
+uint16_t counter = 0;
+uint16_t tempo;
+
 uint16_t input, inputOct;
 
 uint8_t note, releasePulse, arpeggioState, arpeggioOctave, volume;
 
 bool tremoloON = false;
+bool seqSet = false;
 bool volumeAdjust = false;
 bool beatISR = false;
 
@@ -145,6 +171,10 @@ uint16_t mapPhaseInc(uint16_t input) {
     } else {
   return ((antilogTable[input & 0x3f]) >> (input >> 6));
   }
+}
+
+float noteDuty(void){
+  return (analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0)); 
 }
 
 void stopPlayback()
@@ -679,7 +709,6 @@ void volumeAdjTA(void){
   }
 }
 
-
 void BeatEffect(void){
 
   if (readCapacitivePin(C)>Threshold){
@@ -710,6 +739,160 @@ void BeatEffect(void){
     }
     startPlayback(bass,sizeof(bass));
   }
+}
+
+uint16_t mapSeq() {
+  bool noteOk = false;
+  while (!noteOk){
+  if (readCapacitivePin(C)>Threshold){
+    noteOk = true;
+    return selectOctave(12);
+  }
+  else if (readCapacitivePin(Csharp)>Threshold){
+    noteOk = true;
+    return selectOctave(11);
+  }
+  else if (readCapacitivePin(D)>Threshold){
+    noteOk = true;
+    return selectOctave(10);
+  }
+  else if (readCapacitivePin(Dsharp)>Threshold){
+    noteOk = true;
+    return selectOctave(9);
+  }
+  else if (readCapacitivePin(E)>Threshold){
+    noteOk = true;
+    return selectOctave(8);
+  }
+  else if (readCapacitivePin(F)>Threshold){
+    noteOk = true;
+    return selectOctave(7);
+  }
+  else if (readCapacitivePin(Fsharp)>Threshold){
+    noteOk = true;
+    return selectOctave(6);
+  }
+  else if (readCapacitivePin(G)>Threshold){
+    noteOk = true;
+    return selectOctave(5);
+  }
+  else if (readCapacitivePin(Gsharp)>Threshold){
+    noteOk = true;
+    return selectOctave(4);
+  }
+  else if (readCapacitivePin(A)>Threshold){
+    noteOk = true;
+    return selectOctave(3);
+  }
+  else if (readCapacitivePin(Asharp)>Threshold){
+    noteOk = true;
+    return selectOctave(2);
+  }
+  else if (readCapacitivePin(B)>Threshold){
+    noteOk = true;
+    return selectOctave(1);
+  }
+  else if (readCapacitivePin(Cupper)>Threshold){
+    noteOk = true;
+    return 0;
+  }
+  }
+}
+
+
+void setSequence(void){
+  
+  while (!selectNote1){
+    step1 = mapSeq();
+    syncPhaseInc = step1;
+    selectNote1 = true;
+  }
+  delay(500);
+  while (!selectNote2){
+    step2 = mapSeq();
+    syncPhaseInc = step2;
+    selectNote2 = true;
+  }
+  delay(500);
+  while (!selectNote3){
+    step3 = mapSeq();
+    syncPhaseInc = step3;
+    selectNote3 = true;
+  }
+  delay(500);
+  while (!selectNote4){
+    step4 = mapSeq();
+    syncPhaseInc = step4;
+    selectNote4 = true;
+  }
+  delay(500);
+  setSeq = true;
+}
+
+
+
+void sequencePlay(void){
+  
+  grainPhaseInc  =  mapPhaseInc(FREQ);
+  grainDecay     =  DECAY;    
+    
+  if (counter > analogRead(TEMPO_CONTROL)){
+    pattern++;
+    counter = 0;
+  }
+
+  if (pattern == 4){ pattern = 0; }
+
+  
+  if (pattern == 0){
+    if (counter < noteDuty()){
+    syncPhaseInc = step1; }
+    else {
+    syncPhaseInc = 0;
+    }
+    counter++;
+  }
+  else if (pattern == 1){
+    if (counter < noteDuty()){
+    syncPhaseInc = step2; }
+    else {
+    syncPhaseInc = 0;
+    }
+    counter++;
+  }
+  else if (pattern == 2){
+    if (counter < noteDuty()){
+    syncPhaseInc = step3; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
+  else if (pattern == 3){
+    if (counter < noteDuty()){
+    syncPhaseInc = step4; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
+  else { counter = 0; }
+
+  counter++;
+  delay(1);
+}
+
+
+void sequenceEffect(void){
+
+  grainPhaseInc  =  mapPhaseInc(FREQ);
+  grainDecay     =  DECAY; 
+
+  if (!seqSet){
+    setSequence();
+    seqSet = true;
+  }
+  sequencePlay();
 }
 
 SIGNAL(PWM_INTERRUPT)
@@ -776,24 +959,33 @@ void setup() {
 
 void loop() {
 
-  if (analogRead(GRAIN_DECAY_CONTROL) < 255){
+  if (analogRead(GRAIN_DECAY_CONTROL) < 200){
+    seqSet  = false;
     beatISR = false;
     volumeAdjG();
     granularEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 512){
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 400){
+    seqSet  = false;
     beatISR = false;
     volumeAdjTA();
     tremoloEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 720){
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 600){
+    seqSet  = false;
     beatISR = false;
     volumeAdjTA();
     arpeggiatorEffect();
   } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 1100){
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 800){
+    seqSet  = false;
     beatISR = true;
     volumeAdjTA();
     BeatEffect();
+  } 
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 1100){
+    beatISR = false;
+    volumeAdjTA();
+    sequenceEffect();
   } 
 }
