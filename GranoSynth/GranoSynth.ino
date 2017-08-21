@@ -103,6 +103,9 @@ uint16_t i;
 uint16_t counter = 0;
 uint16_t tempo;
 
+uint8_t value;
+uint16_t output;
+
 uint16_t input, inputOct;
 
 uint8_t note, releasePulse, arpeggioState, arpeggioOctave, volume;
@@ -174,7 +177,7 @@ uint16_t mapPhaseInc(uint16_t input) {
 }
 
 float noteDuty(void){
-  return (analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0)); 
+  return ((analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0))+0.1); 
 }
 
 void stopPlayback()
@@ -828,12 +831,7 @@ void setSequence(void){
   delay(500);
   setSeq = true;
 }
-/*
-bool setSeq = false;
-bool state = false;
-bool prevState = false;
-bool seqPlay = true;
-*/
+
 void sequencePlay(void){
   
   grainPhaseInc  =  mapPhaseInc(FREQ);
@@ -912,66 +910,6 @@ void sequenceEffect(void){
   sequencePlay();
 }
 
-SIGNAL(PWM_INTERRUPT)
-{
-  if (!beatISR){
-  uint8_t value;
-  uint16_t output;
-
-  syncPhaseAcc += syncPhaseInc;
-  if (syncPhaseAcc < syncPhaseInc) {
-    // Time to start the next grain
-    grainPhaseAcc = 0;
-    grainAmp = 0x7fff;
-  }
-
-  // Increment the phase of the grain oscillators
-  grainPhaseAcc += grainPhaseInc;
-
-  // Convert phase into a triangle wave
-  value = (grainPhaseAcc >> 7) & 0xff;
-  if (grainPhaseAcc & 0x8000) value = ~value;
-  // Multiply by current grain amplitude to get sample
-  output = value * (grainAmp >> 8);
-
-  // Make the grain amplitudes decay by a factor every sample (exponential decay)
-  grainAmp -= (grainAmp >> 8) * grainDecay;
-
-  // Scale output to the available range, clipping if necessary
-  output >>= 9;
-  if (output > 255) output = 255;
-
-  // Output to PWM (this is faster than using analogWrite)
-  PWM_VALUE = output;
-  }
-}
-
-// This is called at 8000 Hz to load the next sample.
-ISR(TIMER1_COMPA_vect) {
-  if (beatISR){
-  if (sample >= sounddata_length) {
-    if (sample == sounddata_length + lastSample) {
-      stopPlayback();
-    }
-    else {
-      // Ramp down to zero to reduce the click at the end of playback.
-      OCR2B = sounddata_length + lastSample - sample;
-    }
-  }
-  else {
-    OCR2B = pgm_read_byte(&sounddata_data[sample]);
-  }
-  
-  ++sample;
-  }
-}
-
-void setup() {
-  
-  GPIOSetup();
-  audioOn();
-  //Serial.begin(9600);
-}
 
 void deleteSeq(void){
   
@@ -1004,6 +942,66 @@ void stateProcess(void){
     deleteSeq();
   }
   
+}
+
+SIGNAL(PWM_INTERRUPT){
+  
+  if (!beatISR){
+  syncPhaseAcc += syncPhaseInc;
+  if (syncPhaseAcc < syncPhaseInc) {
+    // Time to start the next grain
+    grainPhaseAcc = 0;
+    grainAmp = 0x7fff;
+  }
+
+  // Increment the phase of the grain oscillators
+  grainPhaseAcc += grainPhaseInc;
+
+  // Convert phase into a triangle wave
+  value = (grainPhaseAcc >> 7) & 0xff;
+  if (grainPhaseAcc & 0x8000) value = ~value;
+  // Multiply by current grain amplitude to get sample
+  output = value * (grainAmp >> 8);
+
+  // Make the grain amplitudes decay by a factor every sample (exponential decay)
+  grainAmp -= (grainAmp >> 8) * grainDecay;
+
+  // Scale output to the available range, clipping if necessary
+  output >>= 9;
+  if (output > 255) output = 255;
+
+  // Output to PWM (this is faster than using analogWrite)
+  PWM_VALUE = output;
+  }
+}
+
+// This is called at 8000 Hz to load the next sample.
+ISR(TIMER1_COMPA_vect) {
+  
+  if (beatISR){
+  if (sample >= sounddata_length) {
+    if (sample == sounddata_length + lastSample) {
+      stopPlayback();
+    }
+    else {
+      // Ramp down to zero to reduce the click at the end of playback.
+      OCR2B = sounddata_length + lastSample - sample;
+    }
+  }
+  else {
+    OCR2B = pgm_read_byte(&sounddata_data[sample]);
+  }
+  ++sample;
+  } 
+}
+
+
+
+void setup() {
+  
+  GPIOSetup();
+  audioOn();
+  //Serial.begin(9600);
 }
 
 void loop() {
