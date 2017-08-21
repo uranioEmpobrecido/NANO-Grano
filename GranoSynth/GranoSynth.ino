@@ -828,14 +828,26 @@ void setSequence(void){
   delay(500);
   setSeq = true;
 }
-
-
-
+/*
+bool setSeq = false;
+bool state = false;
+bool prevState = false;
+bool seqPlay = true;
+*/
 void sequencePlay(void){
   
   grainPhaseInc  =  mapPhaseInc(FREQ);
-  grainDecay     =  DECAY;    
-    
+  grainDecay     =  DECAY;   
+
+  if (readCapacitivePin(Cupper)>Threshold){
+    state = true;
+    if (prevState != state){
+      seqPlay = !seqPlay;
+    }
+  } else { state = false; }
+
+  if (seqPlay){
+  
   if (counter > analogRead(TEMPO_CONTROL)){
     pattern++;
     counter = 0;
@@ -880,6 +892,11 @@ void sequencePlay(void){
 
   counter++;
   delay(1);
+  }
+  else {
+    syncPhaseInc = 0;
+  }
+  prevState = state;
 }
 
 
@@ -956,36 +973,61 @@ void setup() {
   //Serial.begin(9600);
 }
 
+void deleteSeq(void){
+  
+  seqSet = false;
+  selectNote1 = false;
+  selectNote2 = false;
+  selectNote3 = false;
+  selectNote4 = false;
+}
+
+void stateProcess(void){
+
+  if (analogRead(GRAIN_DECAY_CONTROL) > 0 && analogRead(GRAIN_DECAY_CONTROL) < 200){
+    beatISR = false; 
+    deleteSeq();
+  }
+  if (analogRead(GRAIN_DECAY_CONTROL) > 200 && analogRead(GRAIN_DECAY_CONTROL) < 400){
+    beatISR = false;
+    deleteSeq();
+  }
+  if (analogRead(GRAIN_DECAY_CONTROL) > 400 && analogRead(GRAIN_DECAY_CONTROL) < 600){
+    beatISR = false;
+    deleteSeq();
+  }
+  if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
+    beatISR = false;
+  }
+  if (analogRead(GRAIN_DECAY_CONTROL) > 800 && analogRead(GRAIN_DECAY_CONTROL) < 1100){     
+    beatISR = true;
+    deleteSeq();
+  }
+  
+}
 
 void loop() {
 
+  stateProcess();
+
   if (analogRead(GRAIN_DECAY_CONTROL) < 200){
-    seqSet  = false;
-    beatISR = false;
     volumeAdjG();
     granularEffect();
   }
   else if (analogRead(GRAIN_DECAY_CONTROL) < 400){
-    seqSet  = false;
-    beatISR = false;
     volumeAdjTA();
     tremoloEffect();
   }
   else if (analogRead(GRAIN_DECAY_CONTROL) < 600){
-    seqSet  = false;
-    beatISR = false;
     volumeAdjTA();
     arpeggiatorEffect();
   } 
   else if (analogRead(GRAIN_DECAY_CONTROL) < 800){
-    seqSet  = false;
-    beatISR = true;
-    volumeAdjTA();
-    BeatEffect();
-  } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 1100){
-    beatISR = false;
     volumeAdjTA();
     sequenceEffect();
+  } 
+  else if (analogRead(GRAIN_DECAY_CONTROL) < 1100){
+    volumeAdjTA();
+    BeatEffect();
   } 
 }
