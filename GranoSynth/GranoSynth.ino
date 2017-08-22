@@ -56,7 +56,7 @@ uint16_t grainDecay;
 #define NO_ENVELOPE           0
 
 //Capacitive Threshold
-#define Threshold             5
+#define Threshold             4
 
 // Map Digital channels
 #define C                     0 
@@ -186,20 +186,17 @@ void stopPlayback()
   TIMSK1 &= ~_BV(OCIE1A);
   
   // Disable the per-sample timer completely.
-  TCCR1B &= ~_BV(CS10);
+  //TCCR1B &= ~_BV(CS10);
   
   // Disable the PWM timer.
-  TCCR2B &= ~_BV(CS10);
-  
-  digitalWrite(speakerPin, LOW);
+  //TCCR2B &= ~_BV(CS10);
+
 }
 
 void startPlayback(unsigned char const *data, int arraylength)
 {
   sounddata_data = data;
   sounddata_length = arraylength;
-
-  pinMode(speakerPin, OUTPUT);
   
   // Set up Timer 2 to do pulse width modulation on the speaker
   // pin.
@@ -832,17 +829,24 @@ void setSequence(void){
   setSeq = true;
 }
 
+uint8_t seqStops;
+
 void sequencePlay(void){
   
   grainPhaseInc  =  mapPhaseInc(FREQ);
   grainDecay     =  DECAY;   
 
-  if (readCapacitivePin(Cupper)>Threshold){
+  if (readCapacitivePin(C)>Threshold){
     state = true;
     if (prevState != state){
       seqPlay = !seqPlay;
     }
   } else { state = false; }
+
+  if (readCapacitivePin(Cupper)>Threshold){
+    deleteSeq();
+    delay(1000);
+  }
 
   if (seqPlay){
   
@@ -918,6 +922,7 @@ void deleteSeq(void){
   selectNote2 = false;
   selectNote3 = false;
   selectNote4 = false;
+  seqPlay = true;
 }
 
 void stateProcess(void){
@@ -1000,8 +1005,7 @@ ISR(TIMER1_COMPA_vect) {
 void setup() {
   
   GPIOSetup();
-  audioOn();
-  //Serial.begin(9600);
+  
 }
 
 void loop() {
@@ -1009,22 +1013,26 @@ void loop() {
   stateProcess();
 
   if (analogRead(GRAIN_DECAY_CONTROL) < 200){
+    audioOn();
     volumeAdjG();
     granularEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 400){
+  else if (analogRead(GRAIN_DECAY_CONTROL) > 200 && analogRead(GRAIN_DECAY_CONTROL) < 400){
+    audioOn();
     volumeAdjTA();
     tremoloEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 600){
+  else if (analogRead(GRAIN_DECAY_CONTROL) > 400 && analogRead(GRAIN_DECAY_CONTROL) < 600){
+    audioOn();
     volumeAdjTA();
     arpeggiatorEffect();
   } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 800){
+  else if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
+    audioOn();
     volumeAdjTA();
     sequenceEffect();
   } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) < 1100){
+  else if (analogRead(GRAIN_DECAY_CONTROL) > 800 && analogRead(GRAIN_DECAY_CONTROL) < 1100){
     volumeAdjTA();
     BeatEffect();
   } 
