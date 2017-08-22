@@ -177,7 +177,7 @@ uint16_t mapPhaseInc(uint16_t input) {
 }
 
 float noteDuty(void){
-  return ((analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0))+0.1); 
+  return ((analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0))+0.15); 
 }
 
 void stopPlayback()
@@ -638,13 +638,13 @@ void tremoloEffect(void){
     syncPhaseInc   =  mapOctave(NO_ENVELOPE);
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(GRAIN_FREQ_CONTROL)/4);
+    delay(analogRead(TEMPO_CONTROL)/4 * (analogRead(DUTY_CYCLE_CONTROL)/1023.0));
     tremoloON = true;
-  } else {
+  } else if (tremoloON){
     syncPhaseInc   =  0;
     grainPhaseInc  =  mapPhaseInc(FREQ);
     grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(GRAIN_FREQ_CONTROL)/8);
+    delay(analogRead(TEMPO_CONTROL)/4 * (1-(analogRead(DUTY_CYCLE_CONTROL)/1023.0)));
     tremoloON = false;
   }  
 }
