@@ -56,7 +56,7 @@ uint16_t grainDecay;
 #define NO_ENVELOPE           0
 
 //Capacitive Threshold
-#define Threshold             4
+#define Threshold             5
 
 // Map Digital channels
 #define C                     0 
@@ -804,7 +804,7 @@ void BeatEffect(void){
     }
     beatPlay();
   }
-/*
+
   if (readCapacitivePin(D)>Threshold){
     delay(150);
     while (readCapacitivePin(D)>Threshold){
@@ -832,12 +832,12 @@ void BeatEffect(void){
       //Nothing
     }
     startPlayback(bass,sizeof(bass));
-  }*/
+  }
 }
 
 void setBeatSequence(void){
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,1000);
   
   while (!selectBeat1){
     beat1 = mapBeat();
@@ -847,7 +847,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
   
   while (!selectBeat2){
     beat2 = mapBeat();
@@ -857,7 +857,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
   
   while (!selectBeat3){
     beat3 = mapBeat();
@@ -867,7 +867,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
   
   while (!selectBeat4){
     beat4 = mapBeat();
@@ -877,7 +877,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
 
   while (!selectBeat5){
     beat5 = mapBeat();
@@ -887,7 +887,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
 
   while (!selectBeat6){
     beat6 = mapBeat();
@@ -897,7 +897,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
 
   while (!selectBeat7){
     beat7 = mapBeat();
@@ -907,7 +907,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
 
   while (!selectBeat8){
     beat8 = mapBeat();
@@ -917,7 +917,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(snare));
+  startPlayback(snare,sizeof(1000));
 }
 
 uint16_t mapLength(unsigned char * sound){
@@ -957,19 +957,20 @@ unsigned char * mapBeat(void){
 
 void beatPlay(void){
 
- /* if (readCapacitivePin(C)>Threshold){
+  if (readCapacitivePin(C)>Threshold){
     state = true;
     if (prevState != state){
       seqPlay = !seqPlay;
-      startPlayback(snare,sizeof(snare));
     }
-  } else { state = false; } 
+  } else { state = false; }
 
   if (readCapacitivePin(Cupper)>Threshold){
-    startPlayback(snare,sizeof(snare));
+    startPlayback(snare,sizeof(1000));
     deleteBeat();
     delay(1000);
-  }*/
+  }
+
+  if (seqPlay){
 
   if (countBeat >= (analogRead(TEMPO_CONTROL)+25)){
     patternBeat++;
@@ -1020,9 +1021,10 @@ void beatPlay(void){
     if (!beatstep8) { startPlayback(beat8,beatLength8); beatstep8 = true; }
     countBeat++;
   }
-
   countBeat++;
   delay(1);
+  } else { patternBeat = 0; }
+  prevState = state;
 }
 
 void deleteBeat(void){
@@ -1031,6 +1033,10 @@ void deleteBeat(void){
   selectBeat2 = false;
   selectBeat3 = false;
   selectBeat4 = false;
+  selectBeat5 = false;
+  selectBeat6 = false;
+  selectBeat7 = false;
+  selectBeat8 = false;
   
 }
 
@@ -1064,8 +1070,6 @@ void setSequence(void){
   delay(500);
   setSeq = true;
 }
-
-uint8_t seqStops;
 
 void sequencePlay(void){
   
@@ -1134,6 +1138,7 @@ void sequencePlay(void){
   else {
     syncPhaseInc = 0;
   }
+  
   prevState = state;
 }
 
