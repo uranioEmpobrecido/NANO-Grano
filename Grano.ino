@@ -843,6 +843,10 @@ void BeatEffect(void){
 
 void setBeatSequence(void){
 
+  delay(500);
+
+  if (analogRead(GRAIN_DECAY_CONTROL) > 800){
+
   startPlayback(snare,1000);
   
   while (!selectBeat1){
@@ -924,6 +928,7 @@ void setBeatSequence(void){
   delay(500);
 
   startPlayback(snare,sizeof(1000));
+  }
 }
 
 uint16_t mapLength(unsigned char * sound){
@@ -1034,6 +1039,7 @@ void beatPlay(void){
 }
 
 void deleteBeat(void){
+  
   setBeat = false;
   selectBeat1 = false;
   selectBeat2 = false;
@@ -1043,12 +1049,15 @@ void deleteBeat(void){
   selectBeat6 = false;
   selectBeat7 = false;
   selectBeat8 = false;
-  
 }
 
 
 
 void setSequence(void){
+
+  delay(500);
+
+  if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
   
   while (!selectNote1){
     step1 = mapSeq();
@@ -1075,6 +1084,7 @@ void setSequence(void){
   }
   delay(500);
   setSeq = true;
+  }
 }
 
 void sequencePlay(void){
