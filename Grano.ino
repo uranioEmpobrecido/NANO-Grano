@@ -18,6 +18,9 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
+#define PWM_VALUE             OCR2B
+#define PWM_INTERRUPT         TIMER2_OVF_vect
+
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
 uint16_t grainPhaseAcc;
@@ -26,59 +29,54 @@ uint16_t grainAmp;
 uint16_t grainDecay;
 
 // Map Analogue channels
-#define GRAIN_FREQ_CONTROL   A1
-#define GRAIN_DECAY_CONTROL  A0
-#define OCTAVE_CONTROL       A2
-#define ATTACK_CONTROL       A4
-#define RELEASE_CONTROL      A3
-
-#define TEMPO_CONTROL        A3
-#define DUTY_CYCLE_CONTROL   A4
+char    EFFECT_AMT      = A1;
+char    EFFECT_SELECTOR = A0;
+char    OCTAVE_CONTROL  = A2;
+char    CONTROL_1       = A4;
+char    CONTROL_2       = A3;
 
 //VCA Control
-#define VCA_CONTROL          A5
-#define VCA_NORMAL_AMPLITUDE  0
-#define VCA_MAX_AMPLITUDE    20
+char    VCA_CONTROL     = A5;
+uint8_t VCA_NORMAL      =  0;
+uint8_t VCA_MAX         = 20;
 
 //Fixed DECAY value
-#define DECAY                64  //48
+uint8_t DECAY           = 64;
 //Fixed DECAY effect value
-#define DECAY_EFF             1
+uint8_t DECAY_EFF       =  1;
 
 //Fixed FREQ value
-#define FREQ                255
+uint8_t FREQ            =255;
 
 //MASK
-#define PORT_B                0
-#define PORT_D                1
+bool PORT_B             =  0;
+bool PORT_D             =  1;
 
 //Envelope Selector
-#define ENVELOPE              1
-#define NO_ENVELOPE           0
+bool ENVELOPE           =  1;
+bool NO_ENVELOPE        =  0;
 
 //Capacitive Threshold
-#define Threshold             5
+uint8_t Threshold       =  5;
 
 // Map Digital channels
-#define C                     0 
-#define Csharp                1 
-#define D                     2 
-#define Dsharp                4  
-#define E                     5   
-#define F                     6 
-#define Fsharp                7  
-#define G                    13  
-#define Gsharp               12  
-#define A                    11   
-#define Asharp               10   
-#define B                     9  
-#define Cupper                8  
+uint8_t C               =  0;
+uint8_t Csharp          =  1;
+uint8_t D               =  2;
+uint8_t Dsharp          =  4;
+uint8_t E               =  5;  
+uint8_t F               =  6;
+uint8_t Fsharp          =  7;
+uint8_t G               = 13; 
+uint8_t Gsharp          = 12;
+uint8_t A               = 11;  
+uint8_t Asharp          = 10;
+uint8_t B               =  9;
+uint8_t Cupper          =  8; 
 
-#define PWM_PIN               3
-#define PWM_VALUE             OCR2B
-#define PWM_INTERRUPT         TIMER2_OVF_vect
+uint8_t PWM_PIN         =  3;
 
-#define SAMPLE_RATE           8000
+uint16_t SAMPLE_RATE    =  8000;
 
 uint16_t freqMap, octaveMap, arpeggioNote;
 
@@ -131,6 +129,7 @@ bool beatRun = true;
 
 uint8_t patternBeat;
 uint16_t countBeat;
+
 bool setBeat = false;
 bool beatOK = false;
 bool beatOn = false;
@@ -208,7 +207,7 @@ uint16_t mapPhaseInc(uint16_t input) {
 }
 
 float noteDuty(void){
-  return ((analogRead(TEMPO_CONTROL)*(analogRead(DUTY_CYCLE_CONTROL)/1023.0))+0.15); 
+  return ((analogRead(CONTROL_2)*(analogRead(CONTROL_1)/1023.0))+0.15); 
 }
 
 void stopPlayback()
@@ -416,8 +415,8 @@ void pulseHigh(void){
 
 void noEnvelopeAdj(void){
   
-  if ((analogRead(ATTACK_CONTROL)<25)&&(analogRead(RELEASE_CONTROL)<25)){
-    if (volume < VCA_MAX_AMPLITUDE){
+  if ((analogRead(CONTROL_1)<25)&&(analogRead(CONTROL_2)<25)){
+    if (volume < VCA_MAX){
       pulseHigh();
       delay(1);      
     }
@@ -427,20 +426,20 @@ void noEnvelopeAdj(void){
 
 void attackProcess(void){
 
-  if ((analogRead(ATTACK_CONTROL)>25)||(analogRead(RELEASE_CONTROL)>25)){
-    if (VCA_MAX_AMPLITUDE > volume){ 
+  if ((analogRead(CONTROL_1)>25)||(analogRead(CONTROL_2)>25)){
+    if (VCA_MAX > volume){ 
     pulseHigh();
-    delay((analogRead(ATTACK_CONTROL)+25)/25);
+    delay((analogRead(CONTROL_1)+25)/25);
     }
   }
 }
 
 void releaseProcess(void){
   
-  if ((analogRead(ATTACK_CONTROL)>25)||(analogRead(RELEASE_CONTROL)>25)){
-    while (volume > VCA_NORMAL_AMPLITUDE){
+  if ((analogRead(CONTROL_1)>25)||(analogRead(CONTROL_2)>25)){
+    while (volume > VCA_NORMAL){
     pulseLow();
-    delay((analogRead(RELEASE_CONTROL)+25)/25);
+    delay((analogRead(CONTROL_2)+25)/25);
     }
   }
 }
@@ -660,7 +659,7 @@ void granularEffect(void){
     grainDecay   =  DECAY_EFF;  
   }
   else {
-    grainDecay   = ((analogRead(GRAIN_FREQ_CONTROL)-512)/2);
+    grainDecay   = ((analogRead(EFFECT_AMT)-512)/2);
   }
 }
 
@@ -669,14 +668,14 @@ void tremoloEffect(void){
   if (!tremoloON){
     syncPhaseInc   =  mapOctave(NO_ENVELOPE);
     grainPhaseInc  =  mapPhaseInc(FREQ);
-    grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(TEMPO_CONTROL)/4 * (analogRead(DUTY_CYCLE_CONTROL)/1025.0));
+    grainDecay     =  DECAY;  //analogRead(EFFECT_SELECTOR) / 8;
+    delay(analogRead(CONTROL_2)/4 * (analogRead(CONTROL_1)/1025.0));
     tremoloON = true;
   } else if (tremoloON){
     syncPhaseInc   =  0;
     grainPhaseInc  =  mapPhaseInc(FREQ);
-    grainDecay     =  DECAY;  //analogRead(GRAIN_DECAY_CONTROL) / 8;
-    delay(analogRead(TEMPO_CONTROL)/4 * (1-(analogRead(DUTY_CYCLE_CONTROL)/1025.0)));
+    grainDecay     =  DECAY;  //analogRead(EFFECT_SELECTOR) / 8;
+    delay(analogRead(CONTROL_2)/4 * (1-(analogRead(CONTROL_1)/1025.0)));
     tremoloON = false;
   }  
 }
@@ -688,28 +687,28 @@ void arpeggiatorEffect(void){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
-      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      delay(analogRead(EFFECT_AMT)/2);
       arpeggioState++;
       }
     else if (arpeggioState == 1){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()+5];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
-      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      delay(analogRead(EFFECT_AMT)/2);
       arpeggioState++;
       }
     else if (arpeggioState == 2){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()+7];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
-      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      delay(analogRead(EFFECT_AMT)/2);
       arpeggioState++;
       }
     else if (arpeggioState == 3){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()+10];
       grainPhaseInc  =  mapPhaseInc(FREQ);
       grainDecay     =  DECAY; 
-      delay(analogRead(GRAIN_FREQ_CONTROL)/2);
+      delay(analogRead(EFFECT_AMT)/2);
       arpeggioState  =  0;
       }
   }
@@ -721,7 +720,7 @@ void volumeAdjG(void){
 
   noEnvelopeAdj();
   if (volumeAdjust){
-    while (volume > VCA_NORMAL_AMPLITUDE){
+    while (volume > VCA_NORMAL){
       pulseLow();
       delay(1);
     }
@@ -733,7 +732,7 @@ void volumeAdjG(void){
 void volumeAdjTA(void){
 
   if (!volumeAdjust){
-    while (volume < VCA_MAX_AMPLITUDE){
+    while (volume < VCA_MAX){
       pulseHigh();
       delay(1);
       }
@@ -845,7 +844,7 @@ void setBeatSequence(void){
 
   delay(500);
 
-  if (analogRead(GRAIN_DECAY_CONTROL) > 800){
+  if (analogRead(EFFECT_SELECTOR) > 800){
 
   startPlayback(snare,1000);
   
@@ -983,7 +982,7 @@ void beatPlay(void){
 
   if (beatRun){
 
-  if (countBeat >= (analogRead(TEMPO_CONTROL)+25)){
+  if (countBeat >= (analogRead(CONTROL_2)+25)){
     patternBeat++;
     countBeat = 0;
   }
@@ -1057,7 +1056,7 @@ void setSequence(void){
 
   delay(500);
 
-  if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
+  if (analogRead(EFFECT_SELECTOR) > 600 && analogRead(EFFECT_SELECTOR) < 800){
   
   while (!selectNote1){
     step1 = mapSeq();
@@ -1106,7 +1105,7 @@ void sequencePlay(void){
 
   if (seqPlay){
   
-  if (counter > analogRead(TEMPO_CONTROL)){
+  if (counter > analogRead(CONTROL_2)){
     pattern++;
     counter = 0;
   }
@@ -1184,22 +1183,22 @@ void deleteSeq(void){
 
 void stateProcess(void){
 
-  if (analogRead(GRAIN_DECAY_CONTROL) > 0 && analogRead(GRAIN_DECAY_CONTROL) < 200){
+  if (analogRead(EFFECT_SELECTOR) > 0 && analogRead(EFFECT_SELECTOR) < 200){
     beatISR = false; 
     deleteSeq();
   }
-  if (analogRead(GRAIN_DECAY_CONTROL) > 200 && analogRead(GRAIN_DECAY_CONTROL) < 400){
+  if (analogRead(EFFECT_SELECTOR) > 200 && analogRead(EFFECT_SELECTOR) < 400){
     beatISR = false;
     deleteSeq();
   }
-  if (analogRead(GRAIN_DECAY_CONTROL) > 400 && analogRead(GRAIN_DECAY_CONTROL) < 600){
+  if (analogRead(EFFECT_SELECTOR) > 400 && analogRead(EFFECT_SELECTOR) < 600){
     beatISR = false;
     deleteSeq();
   }
-  if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
+  if (analogRead(EFFECT_SELECTOR) > 600 && analogRead(EFFECT_SELECTOR) < 800){
     beatISR = false;
   }
-  if (analogRead(GRAIN_DECAY_CONTROL) > 800 && analogRead(GRAIN_DECAY_CONTROL) < 1100){     
+  if (analogRead(EFFECT_SELECTOR) > 800 && analogRead(EFFECT_SELECTOR) < 1100){     
     beatISR = true;
     deleteSeq();
   }
@@ -1269,27 +1268,27 @@ void loop() {
 
   stateProcess();
 
-  if (analogRead(GRAIN_DECAY_CONTROL) < 200){
+  if (analogRead(EFFECT_SELECTOR) < 200){
     audioOn();
     volumeAdjG();
     granularEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) > 200 && analogRead(GRAIN_DECAY_CONTROL) < 400){
+  else if (analogRead(EFFECT_SELECTOR) > 200 && analogRead(EFFECT_SELECTOR) < 400){
     audioOn();
     volumeAdjTA();
     tremoloEffect();
   }
-  else if (analogRead(GRAIN_DECAY_CONTROL) > 400 && analogRead(GRAIN_DECAY_CONTROL) < 600){
+  else if (analogRead(EFFECT_SELECTOR) > 400 && analogRead(EFFECT_SELECTOR) < 600){
     audioOn();
     volumeAdjTA();
     arpeggiatorEffect();
   } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) > 600 && analogRead(GRAIN_DECAY_CONTROL) < 800){
+  else if (analogRead(EFFECT_SELECTOR) > 600 && analogRead(EFFECT_SELECTOR) < 800){
     audioOn();
     volumeAdjTA();
     sequenceEffect();
   } 
-  else if (analogRead(GRAIN_DECAY_CONTROL) > 800 && analogRead(GRAIN_DECAY_CONTROL) < 1100){
+  else if (analogRead(EFFECT_SELECTOR) > 800 && analogRead(EFFECT_SELECTOR) < 1100){
     volumeAdjTA();
     BeatEffect();
   } 
