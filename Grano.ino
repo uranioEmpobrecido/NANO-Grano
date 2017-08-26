@@ -16,6 +16,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
@@ -123,6 +124,10 @@ unsigned char const *sounddata_data=0;
 int sounddata_length=0;
 volatile uint16_t sample;
 byte lastSample;
+
+bool stateBeat = false;
+bool prevStateBeat = false;
+bool beatRun = true;
 
 uint8_t patternBeat;
 uint16_t countBeat;
@@ -620,6 +625,7 @@ uint16_t selectOctave(uint8_t note){
 }
 
 void audioOn() {
+  beatISR = false;
   // Set up PWM to 31.25kHz, phase accurate
   TCCR2A = _BV(COM2B1) | _BV(WGM20);
   TCCR2B = _BV(CS20);
@@ -958,11 +964,11 @@ unsigned char * mapBeat(void){
 void beatPlay(void){
 
   if (readCapacitivePin(C)>Threshold){
-    state = true;
-    if (prevState != state){
-      seqPlay = !seqPlay;
+    stateBeat = true;
+    if (prevStateBeat != stateBeat){
+      beatRun = !beatRun;
     }
-  } else { state = false; }
+  } else { stateBeat = false; }
 
   if (readCapacitivePin(Cupper)>Threshold){
     startPlayback(snare,sizeof(1000));
@@ -970,7 +976,7 @@ void beatPlay(void){
     delay(1000);
   }
 
-  if (seqPlay){
+  if (beatRun){
 
   if (countBeat >= (analogRead(TEMPO_CONTROL)+25)){
     patternBeat++;
@@ -1023,8 +1029,8 @@ void beatPlay(void){
   }
   countBeat++;
   delay(1);
-  } else { patternBeat = 0; }
-  prevState = state;
+  }
+  prevStateBeat = stateBeat;
 }
 
 void deleteBeat(void){
