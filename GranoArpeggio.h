@@ -26,41 +26,58 @@
 #include "GranoSequence.h"
 
 uint8_t readCapacitivePin(uint8_t pin);
-uint16_t mapArpeggio();
+uint16_t mapArpeggio(void);
+float noteDuty(void);
 
 void arpeggiatorEffect(void){
   //ARPEGIATTOR EFFECT
+  grainPhaseInc  =  mapPhaseInc(FREQ);
+  grainDecay     =  DECAY;  
+  
+  if (counterArp > analogRead(CONTROL_2)){
+    arpeggioState++;
+    counterArp = 0;
+  }
+
+  if (arpeggioState == 4) arpeggioState = 0;
+  
   if (mapArpeggio() != 0){
     if (arpeggioState == 0){
+      if (counterArp < noteDuty()){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()];
-      grainPhaseInc  =  mapPhaseInc(FREQ);
-      grainDecay     =  DECAY; 
-      delay(analogRead(EFFECT_AMT)/2);
-      arpeggioState++;
+      } else {
+        syncPhaseInc = 0;
+      }
+      counterArp++;
       }
     else if (arpeggioState == 1){
+      if (counterArp < noteDuty()){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()+5];
-      grainPhaseInc  =  mapPhaseInc(FREQ);
-      grainDecay     =  DECAY; 
-      delay(analogRead(EFFECT_AMT)/2);
-      arpeggioState++;
+      } else {
+        syncPhaseInc = 0;
+      }
+      counterArp++;
       }
     else if (arpeggioState == 2){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+7];
-      grainPhaseInc  =  mapPhaseInc(FREQ);
-      grainDecay     =  DECAY; 
-      delay(analogRead(EFFECT_AMT)/2);
-      arpeggioState++;
+      if (counterArp < noteDuty()){
+      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+7]; 
+      } else {
+        syncPhaseInc = 0;
+      }
+      counterArp++;
       }
     else if (arpeggioState == 3){
+      if (counterArp < noteDuty()){
       syncPhaseInc   =  ArpeggioTable[mapArpeggio()+10];
-      grainPhaseInc  =  mapPhaseInc(FREQ);
-      grainDecay     =  DECAY; 
-      delay(analogRead(EFFECT_AMT)/2);
-      arpeggioState  =  0;
+      } else {
+        syncPhaseInc = 0;
+      }
+      counterArp++;
       }
   }
   else syncPhaseInc  =  0;
+  counterArp++;
+  delay(1);
 }
 
 #endif

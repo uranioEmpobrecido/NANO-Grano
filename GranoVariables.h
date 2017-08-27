@@ -95,7 +95,7 @@ bool prevState = false;
 bool seqPlay = true;
 
 uint16_t i;
-uint16_t counter = 0;
+uint16_t counter, counterArp;
 uint16_t tempo;
 
 uint8_t value;
