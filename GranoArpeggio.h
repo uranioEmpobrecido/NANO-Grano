@@ -52,7 +52,11 @@ void arpeggiatorEffect(void){
       }
     else if (arpeggioState == 1){
       if (counterArp < noteDuty()){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+5];
+        if (analogRead(EFFECT_AMT) < 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+5];
+        else if (analogRead(EFFECT_AMT) < 400 && analogRead(EFFECT_AMT) > 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+3];
+        else if (analogRead(EFFECT_AMT) < 600 && analogRead(EFFECT_AMT) > 400) syncPhaseInc =  ArpeggioTable[mapArpeggio()+3];
+        else if (analogRead(EFFECT_AMT) < 800 && analogRead(EFFECT_AMT) > 600) syncPhaseInc =  ArpeggioTable[mapArpeggio()-3];
+        else if (analogRead(EFFECT_AMT) < 1100 && analogRead(EFFECT_AMT) > 800)syncPhaseInc =  ArpeggioTable[mapArpeggio()+7];
       } else {
         syncPhaseInc = 0;
       }
@@ -60,7 +64,11 @@ void arpeggiatorEffect(void){
       }
     else if (arpeggioState == 2){
       if (counterArp < noteDuty()){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+7]; 
+        if (analogRead(EFFECT_AMT) < 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+7];
+        else if (analogRead(EFFECT_AMT) < 400 && analogRead(EFFECT_AMT) > 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+5];
+        else if (analogRead(EFFECT_AMT) < 600 && analogRead(EFFECT_AMT) > 400) syncPhaseInc =  ArpeggioTable[mapArpeggio()+2];
+        else if (analogRead(EFFECT_AMT) < 800 && analogRead(EFFECT_AMT) > 600)syncPhaseInc =  ArpeggioTable[mapArpeggio()-5];
+        else if (analogRead(EFFECT_AMT) < 1100 && analogRead(EFFECT_AMT) > 800)syncPhaseInc =  ArpeggioTable[mapArpeggio()+12];
       } else {
         syncPhaseInc = 0;
       }
@@ -68,7 +76,11 @@ void arpeggiatorEffect(void){
       }
     else if (arpeggioState == 3){
       if (counterArp < noteDuty()){
-      syncPhaseInc   =  ArpeggioTable[mapArpeggio()+10];
+        if (analogRead(EFFECT_AMT) < 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+10];
+        else if (analogRead(EFFECT_AMT) < 400 && analogRead(EFFECT_AMT) > 200) syncPhaseInc =  ArpeggioTable[mapArpeggio()+9];
+        else if (analogRead(EFFECT_AMT) < 600 && analogRead(EFFECT_AMT) > 400) syncPhaseInc =  ArpeggioTable[mapArpeggio()+1];
+        else if (analogRead(EFFECT_AMT) < 800 && analogRead(EFFECT_AMT) > 600)syncPhaseInc =  ArpeggioTable[mapArpeggio()-9];
+        else if (analogRead(EFFECT_AMT) < 1100 && analogRead(EFFECT_AMT) >800)syncPhaseInc =  ArpeggioTable[mapArpeggio()+7];
       } else {
         syncPhaseInc = 0;
       }
