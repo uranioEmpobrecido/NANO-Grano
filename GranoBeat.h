@@ -114,7 +114,7 @@ void beatPlay(void){
   } else { stateBeat = false; }
 
   if (readCapacitivePin(Cupper)>Threshold){
-    startPlayback(snare,sizeof(1000));
+    startPlayback(blip,blip_length);
     deleteBeat();
     delay(1000);
   }
@@ -178,10 +178,16 @@ void beatPlay(void){
 
 uint16_t mapLength(unsigned char * sound){
 
-  if (sound == kick) { return kick_length ;}
-  if (sound == snare){ return snare_length;}
-  if (sound == tick) { return tick_length ;}
-  if (sound == bass) { return bass_length ;}
+  if (sound == kick) { return kick_length   ;}
+  if (sound == snare){ return snare_length  ;}
+  if (sound == tick) { return tick_length   ;}
+  if (sound == bass) { return bass_length   ;}
+  if (sound == tom)  { return tom_length    ;}
+  if (sound ==cowbell){return cowbell_length;}
+  if (sound == blip) { return blip_length   ;}
+  if (sound == crash){ return crash_length  ;}
+  if (sound == clap) { return clap_length   ;}
+  if (sound == hat)  { return hat_length    ;}
   
 }
 
@@ -189,24 +195,34 @@ unsigned char * mapBeat(void){
 
   while (!beatOK){
   if (readCapacitivePin(D)>Threshold){
-    startPlayback(kick,sizeof(kick));
+    startPlayback(kick,kick_length);
     beatOK = true;
     return kick;
     }
   else if (readCapacitivePin(E)>Threshold){
-    startPlayback(snare,sizeof(snare));
+    startPlayback(cowbell,cowbell_length);
+    beatOK = true;
+    return cowbell;
+    }
+  else if (readCapacitivePin(F)>Threshold){
+    startPlayback(snare,snare_length);
     beatOK = true;
     return snare;
     }
-  else if (readCapacitivePin(F)>Threshold){
-    startPlayback(tick,sizeof(tick));
-    beatOK = true;
-    return tick;
-    }
   else if (readCapacitivePin(G)>Threshold){
-    startPlayback(bass,sizeof(bass));
+    startPlayback(clap,clap_length);
     beatOK = true;
-    return bass;
+    return clap;
+    }
+  else if (readCapacitivePin(A)>Threshold){
+    startPlayback(tom,tom_length);
+    beatOK = true;
+    return tom;
+    }
+  else if (readCapacitivePin(B)>Threshold){
+    startPlayback(hat,hat_length);
+    beatOK = true;
+    return hat;
     }
     }
 }
@@ -217,7 +233,7 @@ void setBeatSequence(void){
 
   if (analogRead(EFFECT_SELECTOR) > 800){
 
-  startPlayback(snare,1000);
+  startPlayback(blip,blip_length);
   
   while (!selectBeat1){
     beat1 = mapBeat();
@@ -227,7 +243,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
   
   while (!selectBeat2){
     beat2 = mapBeat();
@@ -237,7 +253,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
   
   while (!selectBeat3){
     beat3 = mapBeat();
@@ -247,7 +263,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
   
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
   
   while (!selectBeat4){
     beat4 = mapBeat();
@@ -257,7 +273,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
 
   while (!selectBeat5){
     beat5 = mapBeat();
@@ -267,7 +283,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
 
   while (!selectBeat6){
     beat6 = mapBeat();
@@ -277,7 +293,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
 
   while (!selectBeat7){
     beat7 = mapBeat();
@@ -287,7 +303,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
 
   while (!selectBeat8){
     beat8 = mapBeat();
@@ -297,7 +313,7 @@ void setBeatSequence(void){
   beatOK = false;
   delay(500);
 
-  startPlayback(snare,sizeof(1000));
+  startPlayback(blip,blip_length);
   }
 }
 
@@ -317,28 +333,42 @@ void BeatEffect(void){
     while (readCapacitivePin(D)>Threshold){
       //Nothing
     }
-    startPlayback(kick,sizeof(kick));
+    startPlayback(kick,kick_length);
   }
   if (readCapacitivePin(E)>Threshold){
     delay(150);
     while (readCapacitivePin(E)>Threshold){
       //Nothing
     }
-    startPlayback(snare,sizeof(snare));
+    startPlayback(cowbell,cowbell_length);
   }
   if (readCapacitivePin(F)>Threshold){
     delay(150);
     while (readCapacitivePin(F)>Threshold){
       //Nothing
     }
-    startPlayback(tick,sizeof(tick));
+    startPlayback(snare,snare_length);
   }
   if (readCapacitivePin(G)>Threshold){
     delay(150);
     while (readCapacitivePin(G)>Threshold){
       //Nothing
     }
-    startPlayback(bass,sizeof(bass));
+    startPlayback(clap,clap_length);
+  }
+    if (readCapacitivePin(A)>Threshold){
+    delay(150);
+    while (readCapacitivePin(A)>Threshold){
+      //Nothing
+    }
+    startPlayback(tom,tom_length);
+  }
+    if (readCapacitivePin(B)>Threshold){
+    delay(150);
+    while (readCapacitivePin(B)>Threshold){
+      //Nothing
+    }
+    startPlayback(hat,hat_length);
   }
 }
 
