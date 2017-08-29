@@ -131,7 +131,7 @@ bool stateBeat = false;
 bool prevStateBeat = false;
 bool beatRun = true;
 
-uint8_t patternBeat;
+int8_t patternBeat;
 uint16_t countBeat;
 
 bool setBeat = false;

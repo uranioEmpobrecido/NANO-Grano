@@ -110,6 +110,7 @@ void beatPlay(void){
     stateBeat = true;
     if (prevStateBeat != stateBeat){
       beatRun = !beatRun;
+      patternBeat = 8;
     }
   } else { stateBeat = false; }
 
@@ -121,7 +122,7 @@ void beatPlay(void){
 
   if (beatRun){
 
-  if (countBeat >= (analogRead(CONTROL_2)+25)){
+  if (countBeat >= ((analogRead(CONTROL_2)/2)+50)){
     patternBeat++;
     countBeat = 0;
   }
@@ -329,42 +330,36 @@ void BeatEffect(void){
   }
 
   if (readCapacitivePin(D)>Threshold){
-    delay(150);
     while (readCapacitivePin(D)>Threshold){
       //Nothing
     }
     startPlayback(kick,kick_length);
   }
   if (readCapacitivePin(E)>Threshold){
-    delay(150);
     while (readCapacitivePin(E)>Threshold){
       //Nothing
     }
     startPlayback(cowbell,cowbell_length);
   }
   if (readCapacitivePin(F)>Threshold){
-    delay(150);
     while (readCapacitivePin(F)>Threshold){
       //Nothing
     }
     startPlayback(snare,snare_length);
   }
   if (readCapacitivePin(G)>Threshold){
-    delay(150);
     while (readCapacitivePin(G)>Threshold){
       //Nothing
     }
     startPlayback(clap,clap_length);
   }
     if (readCapacitivePin(A)>Threshold){
-    delay(150);
     while (readCapacitivePin(A)>Threshold){
       //Nothing
     }
     startPlayback(tom,tom_length);
   }
     if (readCapacitivePin(B)>Threshold){
-    delay(150);
     while (readCapacitivePin(B)>Threshold){
       //Nothing
     }
