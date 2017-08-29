@@ -83,6 +83,8 @@ ISR(TIMER1_COMPA_vect) {
 void setup() {
   
   GPIOSetup(); 
+  //Sound that says that Grano is ready to work
+  //startPlayback(blip,blip_length);
 }
 
 void loop() {

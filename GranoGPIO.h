@@ -90,6 +90,11 @@ uint8_t readCapacitivePin(uint8_t pinToMeasure) {
   return cycles;
 }
 
+void softReset(){
+  asm volatile ("  jmp 0"); 
+  delay(500);
+} 
+
 
 void setLow(int pin){
 

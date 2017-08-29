@@ -17,6 +17,14 @@
  #include "WProgram.h"
 #endif
 
+uint8_t grainMode    = 1;
+uint8_t tremoloMode  = 2;
+uint8_t arpeggioMode = 3;
+uint8_t sequenceMode = 4;
+uint8_t drumboxMode  = 5;
+
+uint8_t actualMode, initialMode;
+
 uint16_t syncPhaseAcc;
 uint16_t syncPhaseInc;
 uint16_t grainPhaseAcc;

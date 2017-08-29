@@ -29,10 +29,10 @@ uint8_t readCapacitivePin(uint8_t pin);
 float noteDuty(void);
 
 void setSequence(void){
-
-  delay(500);
-
+  
   if (analogRead(EFFECT_SELECTOR) > 600 && analogRead(EFFECT_SELECTOR) < 800){
+
+    syncPhaseInc = 0;
   
   while (!selectNote1){
     step1 = mapSeq();
@@ -86,6 +86,7 @@ void sequencePlay(void){
   } else { state = false; }
 
   if (readCapacitivePin(Cupper)>Threshold){
+    syncPhaseInc = 0;
     deleteSeq();
     delay(1000);
   }
