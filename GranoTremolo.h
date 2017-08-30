@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*! 
-    @file     GranoFunctions.h
+    @file     GranoTremolo.h
     @author   Jorge Gutierrez (NANO.es)
 	@license 
 

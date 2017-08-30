@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*! 
-    @file     GranoFunctions.h
+    @file     GranoMap.h
     @author   Jorge Gutierrez (NANO.es)
 	@license 
 

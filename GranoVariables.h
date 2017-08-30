@@ -11,12 +11,6 @@
 #ifndef GRANOVARIABLES_H
 #define GRANOVARIABLES_H
 
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
-
 uint8_t grainMode    = 1;
 uint8_t tremoloMode  = 2;
 uint8_t arpeggioMode = 3;
@@ -336,4 +330,4 @@ uint16_t mapPhaseInc(uint16_t input) {
   }
 }
 
-#endif //GRANOVARIABLES_H
+#endif

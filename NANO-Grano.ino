@@ -18,8 +18,8 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
-#include "GranoGPIO.h"
 #include "GranoVariables.h"
+#include "GranoGPIO.h"
 #include "GranoProcess.h"
 #include "GranoSequence.h"
 #include "GranoBeat.h"

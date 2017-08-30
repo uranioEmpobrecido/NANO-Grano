@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*! 
-    @file     GranoFunctions.h
+    @file     GranoSequence.h
     @author   Jorge Gutierrez (NANO.es)
 	@license 
 
@@ -82,6 +82,7 @@ void sequencePlay(void){
     state = true;
     if (prevState != state){
       seqPlay = !seqPlay;
+      pattern = 4;
     }
   } else { state = false; }
 
