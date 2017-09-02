@@ -22,6 +22,7 @@
 #include "GranoGPIO.h"
 #include "GranoSequence.h"
 #include "GranoBeat.h"
+#include "GranoTremolo.h"
 
 void noEnvelopeAdj(void);
 void pulseLow(void);

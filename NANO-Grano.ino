@@ -24,6 +24,7 @@
 #include "GranoSequence.h"
 #include "GranoBeat.h"
 #include "GranoArpeggio.h"
+#include "GranoTremolo.h"
 #include "GranoMap.h"
 
 #define PWM_VALUE             OCR2B

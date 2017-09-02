@@ -23,6 +23,7 @@
 #include "GranoBeat.h"
 #include "GranoGPIO.h"
 #include "GranoMap.h"
+#include "GranoTremolo.h"
 #include "GranoSequence.h"
 
 uint8_t readCapacitivePin(uint8_t pin);

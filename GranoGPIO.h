@@ -21,6 +21,7 @@
 #include "GranoVariables.h"
 #include "GranoProcess.h"
 #include "GranoSequence.h"
+#include "GranoTremolo.h"
 #include "GranoBeat.h"
 
 //---------- Thresholdacitive Touch sensing -----------------------------
@@ -201,30 +202,14 @@ void GPIOSetup(void){
 void granularEffect(void){
   //GRAIN EFFECT
   syncPhaseInc   =  mapOctave(ENVELOPE);
-  grainPhaseInc  =  mapPhaseInc(analogRead(FREQ))/2;  
-  if (analogRead(FREQ) < 512){
-    grainDecay   =  DECAY_EFF;  
+  grainPhaseInc  =  mapPhaseInc((analogRead(EFFECT_AMT)*1.4)+15);  
+  if (analogRead(EFFECT_AMT) < 512){
+    grainDecay   =  DECAY_EFF;
   }
   else {
     grainDecay   = ((analogRead(EFFECT_AMT)-512)/2);
   }
 }
 
-void tremoloEffect(void){
-  //TREMOLO EFFECT
-  if (!tremoloON){
-    syncPhaseInc   =  mapOctave(NO_ENVELOPE);
-    grainPhaseInc  =  mapPhaseInc(FREQ);
-    grainDecay     =  DECAY;  //analogRead(EFFECT_SELECTOR) / 8;
-    delay(analogRead(CONTROL_2)/4 * (analogRead(CONTROL_1)/1025.0));
-    tremoloON = true;
-  } else if (tremoloON){
-    syncPhaseInc   =  0;
-    grainPhaseInc  =  mapPhaseInc(FREQ);
-    grainDecay     =  DECAY;  //analogRead(EFFECT_SELECTOR) / 8;
-    delay(analogRead(CONTROL_2)/4 * (1-(analogRead(CONTROL_1)/1025.0)));
-    tremoloON = false;
-  }  
-}
 
 #endif

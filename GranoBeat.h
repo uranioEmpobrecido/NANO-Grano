@@ -21,6 +21,7 @@
 #include "GranoVariables.h"
 #include "GranoProcess.h"
 #include "GranoSequence.h"
+#include "GranoTremolo.h"
 #include "GranoGPIO.h"
 
 uint8_t readCapacitivePin(uint8_t pin);
@@ -122,7 +123,7 @@ void beatPlay(void){
 
   if (beatRun){
 
-  if (countBeat >= ((analogRead(CONTROL_2)/2)+50)){
+  if (countBeat >= ((analogRead(EFFECT_AMT)/2)+50)){
     patternBeat++;
     countBeat = 0;
   }

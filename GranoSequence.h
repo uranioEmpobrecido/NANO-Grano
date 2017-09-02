@@ -23,6 +23,7 @@
 #include "GranoBeat.h"
 #include "GranoGPIO.h"
 #include "GranoMap.h"
+#include "GranoTremolo.h"
 #include "GranoArpeggio.h"
 
 uint8_t readCapacitivePin(uint8_t pin);
@@ -58,6 +59,30 @@ void setSequence(void){
     selectNote4 = true;
   }
   delay(500);
+  while (!selectNote5){
+    step5 = mapSeq();
+    syncPhaseInc = step5;
+    selectNote5 = true;
+  }
+  delay(500);
+  while (!selectNote6){
+    step6 = mapSeq();
+    syncPhaseInc = step6;
+    selectNote6 = true;
+  }
+  delay(500);
+  while (!selectNote7){
+    step7 = mapSeq();
+    syncPhaseInc = step7;
+    selectNote7 = true;
+  }
+  delay(500);  
+  while (!selectNote8){
+    step8 = mapSeq();
+    syncPhaseInc = step8;
+    selectNote8 = true;
+  }
+  delay(500);
   setSeq = true;
   }
 }
@@ -70,19 +95,23 @@ void deleteSeq(void){
   selectNote2 = false;
   selectNote3 = false;
   selectNote4 = false;
+  selectNote5 = false;
+  selectNote6 = false;
+  selectNote7 = false;
+  selectNote8 = false;
   seqPlay = true;
 }
 
 void sequencePlay(void){
   
   grainPhaseInc  =  mapPhaseInc(FREQ);
-  grainDecay     =  DECAY;   
+  grainDecay     =  (analogRead(EFFECT_AMT)/8)+2; 
 
   if (readCapacitivePin(C)>Threshold){
     state = true;
     if (prevState != state){
       seqPlay = !seqPlay;
-      pattern = 4;
+      pattern = 8;
     }
   } else { state = false; }
 
@@ -99,7 +128,7 @@ void sequencePlay(void){
     counter = 0;
   }
 
-  if (pattern == 4){ pattern = 0; }
+  if (pattern == 8){ pattern = 0; }
 
   
   if (pattern == 0){
@@ -134,6 +163,38 @@ void sequencePlay(void){
     }
     counter++;
   }
+  else if (pattern == 4){
+    if (counter < noteDuty()){
+    syncPhaseInc = step5; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
+    else if (pattern == 5){
+    if (counter < noteDuty()){
+    syncPhaseInc = step6; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
+  else if (pattern == 6){
+    if (counter < noteDuty()){
+    syncPhaseInc = step7; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
+  else if (pattern == 7){
+    if (counter < noteDuty()){
+    syncPhaseInc = step8; }
+    else {
+    syncPhaseInc = 0; 
+    }
+    counter++;
+  }
   else { counter = 0; }
 
   counter++;
@@ -148,9 +209,6 @@ void sequencePlay(void){
 
 
 void sequenceEffect(void){
-
-  grainPhaseInc  =  mapPhaseInc(FREQ);
-  grainDecay     =  DECAY; 
 
   if (!seqSet){
     setSequence();

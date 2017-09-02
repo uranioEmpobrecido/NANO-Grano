@@ -27,9 +27,9 @@ uint16_t grainAmp;
 uint16_t grainDecay;
 
 // Map Analogue channels
-char    EFFECT_AMT      = A1;
+char    EFFECT_AMT      = A2;
 char    EFFECT_SELECTOR = A0;
-char    OCTAVE_CONTROL  = A2;
+char    OCTAVE_CONTROL  = A1;
 char    CONTROL_1       = A4;
 char    CONTROL_2       = A3;
 
